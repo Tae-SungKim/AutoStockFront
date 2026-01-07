@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   History,
   TrendingUp,
@@ -298,19 +298,47 @@ export function TradeHistory() {
           <div className="bg-gray-700/50 rounded-lg p-4">
             <p className="text-gray-400 text-sm mb-1">총 매수</p>
             <p className="text-lg font-bold text-red-400">
-              {formatNumber(dailyRecords.buyCount)}회
+              {formatNumber(
+                (dailyRecords || [])
+                  .map((it) => it.buyCount)
+                  .reduce((a, b) => {
+                    return a + b;
+                  }, 0)
+              )}
+              회
             </p>
             <p className="text-xs text-gray-500 mt-1">
-              ₩{formatNumber(dailyRecords.buyAmount)}
+              ₩
+              {formatNumber(
+                (dailyRecords || [])
+                  .map((it) => it.buyAmount)
+                  .reduce((a, b) => {
+                    return a + b;
+                  }, 0)
+              )}
             </p>
           </div>
           <div className="bg-gray-700/50 rounded-lg p-4">
             <p className="text-gray-400 text-sm mb-1">총 매도</p>
             <p className="text-lg font-bold text-blue-400">
-              {formatNumber(dailyRecords.sellCount)}회
+              {formatNumber(
+                (dailyRecords || [])
+                  .map((it) => it.sellCount)
+                  .reduce((a, b) => {
+                    return a + b;
+                  }, 0)
+              )}
+              회
             </p>
             <p className="text-xs text-gray-500 mt-1">
-              ₩{formatNumber(dailyRecords.sellAmount)}
+              ₩
+              {formatNumber(
+                (dailyRecords || [])
+                  .map((it) => it.sellAmount)
+                  .reduce((a, b) => {
+                    return a + b;
+                  }, 0)
+              )}
             </p>
           </div>
           <div className="bg-gray-700/50 rounded-lg p-4">
@@ -318,14 +346,32 @@ export function TradeHistory() {
             <p
               className={
                 "text-lg font-bold " +
-                (dailyRecords.netProfit >= 0 ? "text-red-400" : "text-blue-400")
+                ((dailyRecords || [])
+                  .map((it) => it.netProfit)
+                  .reduce((a, b) => {
+                    return a + b;
+                  }, 0) >= 0
+                  ? "text-red-400"
+                  : "text-blue-400")
               }
             >
-              {dailyRecords.netProfit >= 0 ? "+" : ""}₩
-              {formatNumber(dailyRecords.netProfit)}
+              {formatNumber(
+                (dailyRecords || [])
+                  .map((it) => it.netProfit)
+                  .reduce((a, b) => {
+                    return a + b;
+                  }, 0)
+              )}
             </p>
             <p className="text-xs text-yellow-400 mt-1">
-              수수료: -₩{formatNumber(dailyRecords.fee)}
+              수수료: -₩
+              {formatNumber(
+                (dailyRecords || [])
+                  .map((it) => it.fee)
+                  .reduce((a, b) => {
+                    return a + b;
+                  }, 0)
+              )}
             </p>
           </div>
         </div>
@@ -362,7 +408,7 @@ export function TradeHistory() {
               </tr>
             </thead>
             <tbody>
-              {dailyRecords.markets.map((record) => {
+              {/*dailyRecords.markets.map((record) => {
                 // profitRate는 "1.23%" 형식의 문자열이므로 파싱
                 const profitRateNum = parseFloat(
                   record.profitRate?.replace("%", "") ?? "0"
@@ -415,7 +461,7 @@ export function TradeHistory() {
                     </td>
                   </tr>
                 );
-              })}
+              })*/}
             </tbody>
           </table>
         </div>

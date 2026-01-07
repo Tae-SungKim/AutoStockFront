@@ -306,8 +306,11 @@ export interface AvailableStrategy {
 
 export interface UserStrategy {
   strategyName: string;
+  name: string;
+  className: string;
   enabled: boolean;
   priority: number;
+  description?: string;
 }
 
 export interface UserStrategiesResponse {

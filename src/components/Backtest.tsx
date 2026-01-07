@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   Play,
   TrendingUp,
@@ -15,9 +15,7 @@ import {
 } from "lucide-react";
 import { backtest, strategyService } from "../api/upbitApi";
 import type {
-  BacktestResult,
   BacktestCompareSummary,
-  TradeHistoryItem,
   MultiMarketCompareResult,
   SimulationResult,
   AvailableStrategy,

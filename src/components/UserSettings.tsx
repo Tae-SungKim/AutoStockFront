@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { userApi } from "../api/authApi";
 import { strategyService } from "../api/upbitApi";
-import type { AvailableStrategy, UserStrategy } from "../types";
+import type { UserStrategy } from "../types";
 import {
   Settings,
   Key,
@@ -52,9 +52,9 @@ export function UserSettings() {
   } | null>(null);
 
   // Strategies
-  const [availableStrategies, setAvailableStrategies] = useState<
+  /*const [availableStrategies, setAvailableStrategies] = useState<
     AvailableStrategy[]
-  >([]);
+  >([]);*/
   const [userStrategies, setUserStrategies] = useState<UserStrategy[]>([]);
   const [strategiesLoading, setStrategiesLoading] = useState(false);
   const [strategiesMessage, setStrategiesMessage] = useState<{
@@ -77,7 +77,7 @@ export function UserSettings() {
       console.log("Available strategies:", available);
       console.log("User strategies:", userStrats);
 
-      setAvailableStrategies(available || []);
+      //setAvailableStrategies(available || []);
       setUserStrategies(userStrats || []);
     } catch (error) {
       console.error("Failed to fetch strategies:", error);
@@ -147,12 +147,12 @@ export function UserSettings() {
   };
 
   // 전략이 활성화되어 있는지 확인
-  const isStrategyEnabled = (strategyName: string): boolean => {
+  /*const isStrategyEnabled = (strategyName: string): boolean => {
     const userStrategy = userStrategies.find(
       (s) => s.strategyName === strategyName
     );
     return userStrategy?.enabled ?? false;
-  };
+  };*/
 
   const handleUpdateKeys = async (e: React.FormEvent) => {
     e.preventDefault();
