@@ -75,8 +75,8 @@ export function AccountInfo() {
 
   useEffect(() => {
     fetchAccounts();
-    const interval = setInterval(fetchAccounts, 10000);
-    return () => clearInterval(interval);
+    //const interval = setInterval(fetchAccounts, 10000);
+    //return () => clearInterval(interval);
   }, []);
 
   const totalAsset = accounts.reduce(

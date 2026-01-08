@@ -55,8 +55,8 @@ export function MarketList({
 
   useEffect(() => {
     fetchMarkets();
-    const interval = setInterval(fetchMarkets, 5000);
-    return () => clearInterval(interval);
+    //const interval = setInterval(fetchMarkets, 5000);
+    //return () => clearInterval(interval);
   }, []);
 
   const filteredMarkets = markets.filter(
