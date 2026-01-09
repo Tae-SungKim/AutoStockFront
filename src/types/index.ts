@@ -291,6 +291,7 @@ export interface DailyProfitRecord {
   buyAmount: number;
   sellAmount: number;
   fee: number;
+  status: "MATCHED" | "HOLDING";
   netProfit: number;
   profitRate: string; // "1.23%" 형식
   markets: string[];

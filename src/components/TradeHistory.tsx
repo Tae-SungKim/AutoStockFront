@@ -299,11 +299,9 @@ export function TradeHistory() {
             <p className="text-gray-400 text-sm mb-1">총 매수</p>
             <p className="text-lg font-bold text-red-400">
               {formatNumber(
-                (dailyRecords || [])
-                  .map((it) => it.buyCount)
-                  .reduce((a, b) => {
-                    return a + b;
-                  }, 0)
+                (dailyRecords || []).filter((it) =>
+                  ["MATCHED", "HOLDING"].includes(it.status)
+                ).length
               )}
               회
             </p>
@@ -322,11 +320,9 @@ export function TradeHistory() {
             <p className="text-gray-400 text-sm mb-1">총 매도</p>
             <p className="text-lg font-bold text-blue-400">
               {formatNumber(
-                (dailyRecords || [])
-                  .map((it) => it.sellCount)
-                  .reduce((a, b) => {
-                    return a + b;
-                  }, 0)
+                (dailyRecords || []).filter((it) =>
+                  ["MATCHED"].includes(it.status)
+                ).length
               )}
               회
             </p>
