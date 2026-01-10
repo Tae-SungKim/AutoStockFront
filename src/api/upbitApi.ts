@@ -7,8 +7,6 @@ import type {
   OrderResponse,
   TradingStatus,
   BacktestResult,
-  BacktestCompareSummary,
-  MultiMarketCompareResult,
   SimulationResult,
   TradeProfitRecord,
   TradeProfitSummary,
@@ -211,56 +209,41 @@ const backtestApi = axios.create({
 setupAuthInterceptor(backtestApi);
 
 export const backtest = {
-  run: async (): Promise<BacktestResult> => {
-    const response = await backtestApi.get<BacktestResult>("/run");
-    return response.data;
-  },
-
-  runStrategy: async (strategy: string): Promise<BacktestResult> => {
-    const response = await backtestApi.get<BacktestResult>("/run/" + strategy);
-    return response.data;
-  },
-
-  compareSummary: async (): Promise<BacktestCompareSummary> => {
-    const response = await backtestApi.get<BacktestCompareSummary>(
-      "/compare/summary"
+  // DB 데이터로 단일 전략 백테스트
+  runDbStrategy: async (
+    strategy: string,
+    market: string,
+    unit: number = 1
+  ): Promise<BacktestResult> => {
+    const response = await backtestApi.get<BacktestResult>(
+      `/run/db/${strategy}`,
+      { params: { market, unit } }
     );
     return response.data;
   },
 
-  getMarkets: async (): Promise<string[]> => {
-    const response = await backtestApi.get<string[]>("/markets");
-    return response.data;
-  },
-
-  multiCompare: async (
-    markets: string[]
-  ): Promise<MultiMarketCompareResult> => {
-    const response = await backtestApi.get<MultiMarketCompareResult>(
-      "/multi/compare",
-      { params: { markets: markets.join(",") } }
-    );
-    return response.data;
-  },
-
-  simulateMulti: async (markets: string[]): Promise<SimulationResult> => {
+  // DB 데이터로 멀티 코인 백테스트
+  multiDb: async (
+    markets: string[],
+    strategy: string,
+    unit: number = 1
+  ): Promise<SimulationResult> => {
     const response = await backtestApi.get<SimulationResult>(
-      "/simulate/multi",
+      "/multi/db",
       {
-        params: { markets: markets.join(",") },
+        params: {
+          markets: markets.join(","),
+          strategy,
+          unit,
+        },
       }
     );
     return response.data;
   },
 
-  simulateTop: async (
-    topN: number = 10,
-    candleCount: number = 200,
-    strategy: string = ""
-  ): Promise<SimulationResult> => {
-    const response = await backtestApi.get<SimulationResult>("/simulate/top", {
-      params: { topN, candleCount, strategy },
-    });
+  // DB에 저장된 마켓 목록 조회
+  getMarkets: async (): Promise<string[]> => {
+    const response = await backtestApi.get<string[]>("/markets/db");
     return response.data;
   },
 };
