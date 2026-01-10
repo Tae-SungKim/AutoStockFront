@@ -10,11 +10,28 @@ import type {
   SimulationResult,
   TradeProfitRecord,
   TradeProfitSummary,
-  DailyProfitRecord,
+  DailyProfitResponse,
   AuthResponse,
   AvailableStrategy,
   UserStrategy,
   StrategyResponse,
+  MarketAlert,
+  MarketScanResult,
+  TopGainerLoser,
+  DashboardData,
+  DashboardSummary,
+  RebalanceStatus,
+  RebalancePlan,
+  RebalanceExecuteResult,
+  EqualAllocationResult,
+  RebalanceTarget,
+  BacktestVisualizationResult,
+  StrategyCompareResult,
+  CoinHeatmapResult,
+  StrategyParamDefinition,
+  StrategyParamDetail,
+  StrategyParamUpdateResult,
+  StrategyParamSummary,
 } from "../types";
 
 // 공통 인터셉터 설정 함수
@@ -189,11 +206,11 @@ export const upbitApi = {
   getDailyProfit: async (
     from?: string,
     to?: string
-  ): Promise<DailyProfitRecord[]> => {
+  ): Promise<DailyProfitResponse> => {
     const params: { from?: string; to?: string } = {};
     if (from) params.from = from;
     if (to) params.to = to;
-    const response = await api.get<DailyProfitRecord[]>("/profit/real/total", {
+    const response = await api.get<DailyProfitResponse>("/profit/real/total", {
       params,
     });
     return response.data;
@@ -228,22 +245,109 @@ export const backtest = {
     strategy: string,
     unit: number = 1
   ): Promise<SimulationResult> => {
-    const response = await backtestApi.get<SimulationResult>(
-      "/multi/db",
-      {
-        params: {
-          markets: markets.join(","),
-          strategy,
-          unit,
-        },
-      }
-    );
+    const response = await backtestApi.get<SimulationResult>("/multi/db", {
+      params: {
+        markets: markets.join(","),
+        strategy,
+        unit,
+      },
+    });
     return response.data;
   },
 
   // DB에 저장된 마켓 목록 조회
   getMarkets: async (): Promise<string[]> => {
     const response = await backtestApi.get<string[]>("/markets/db");
+    return response.data;
+  },
+  getMarketAlerts: async (market: string): Promise<MarketAlert[]> => {
+    const response = await backtestApi.get<MarketAlert[]>(
+      `/alerts/markets${market}`
+    );
+    return response.data;
+  },
+
+  // 백테스트 시각화 (Single)
+  getVisualization: async (
+    market: string,
+    strategy?: string,
+    initialBalance: number = 1000000,
+    candleUnit: number = 5,
+    candleCount: number = 200
+  ): Promise<BacktestVisualizationResult> => {
+    const response = await backtestApi.get<BacktestVisualizationResult>(
+      "/visualization/single",
+      {
+        params: { market, strategy, initialBalance, candleUnit, candleCount },
+      }
+    );
+    return response.data;
+  },
+
+  // 백테스트 시각화 (DB)
+  getVisualizationDb: async (
+    market: string,
+    strategy?: string,
+    initialBalance: number = 1000000,
+    unit?: number
+  ): Promise<BacktestVisualizationResult> => {
+    const response = await backtestApi.get<BacktestVisualizationResult>(
+      "/visualization/single/db",
+      {
+        params: { market, strategy, initialBalance, unit },
+      }
+    );
+    return response.data;
+  },
+
+  // 전략 비교
+  compareStrategies: async (
+    market: string,
+    initialBalance: number = 1000000,
+    candleUnit: number = 5,
+    candleCount: number = 200
+  ): Promise<StrategyCompareResult> => {
+    const response = await backtestApi.get<StrategyCompareResult>(
+      "/visualization/compare-strategies",
+      {
+        params: { market, initialBalance, candleUnit, candleCount },
+      }
+    );
+    return response.data;
+  },
+
+  // 코인 히트맵
+  getCoinHeatmap: async (
+    markets: string[],
+    strategy: string,
+    initialBalance: number = 1000000,
+    candleUnit: number = 5,
+    candleCount: number = 200
+  ): Promise<CoinHeatmapResult> => {
+    const response = await backtestApi.post<CoinHeatmapResult>(
+      "/visualization/coin-heatmap",
+      {
+        markets,
+        strategy,
+        initialBalance,
+        candleUnit,
+        candleCount,
+      }
+    );
+    return response.data;
+  },
+};
+
+const altersApi = axios.create({
+  baseURL: "/api/alerts",
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
+setupAuthInterceptor(altersApi);
+export const alters = {
+  getMarketAlerts: async (market: string): Promise<MarketAlert[]> => {
+    const response = await altersApi.get<MarketAlert[]>(`/market/${market}`);
     return response.data;
   },
 };
@@ -335,6 +439,177 @@ export const strategyService = {
   // 모든 설정 초기화
   resetStrategies: async (): Promise<StrategyResponse> => {
     const response = await strategyApi.delete<StrategyResponse>("");
+    return response.data;
+  },
+};
+
+// Alert API
+const alertApi = axios.create({
+  baseURL: "/api/alerts",
+  headers: { "Content-Type": "application/json" },
+});
+setupAuthInterceptor(alertApi);
+
+export const alertService = {
+  getMarketAlert: async (market: string): Promise<MarketAlert[]> => {
+    const response = await alertApi.get<MarketAlert[]>(`/market/${market}`);
+    return response.data;
+  },
+  scanMarket: async (topN: number = 50): Promise<MarketScanResult> => {
+    const response = await alertApi.get<MarketScanResult>("/scan", {
+      params: { topN },
+    });
+    return response.data;
+  },
+  getTopGainers: async (limit: number = 10): Promise<TopGainerLoser[]> => {
+    const response = await alertApi.get<TopGainerLoser[]>("/top-gainers", {
+      params: { limit },
+    });
+    return response.data;
+  },
+  getTopLosers: async (limit: number = 10): Promise<TopGainerLoser[]> => {
+    const response = await alertApi.get<TopGainerLoser[]>("/top-losers", {
+      params: { limit },
+    });
+    return response.data;
+  },
+};
+
+// Dashboard API
+const dashboardApi = axios.create({
+  baseURL: "/api/dashboard",
+  headers: { "Content-Type": "application/json" },
+});
+setupAuthInterceptor(dashboardApi);
+
+export const dashboardService = {
+  getDashboardData: async (): Promise<DashboardData> => {
+    const response = await dashboardApi.get<DashboardData>("");
+    return response.data;
+  },
+  getSummary: async (): Promise<DashboardSummary> => {
+    const response = await dashboardApi.get<DashboardSummary>("/summary");
+    return response.data;
+  },
+};
+
+// Rebalance API
+const rebalanceApi = axios.create({
+  baseURL: "/api/rebalance",
+  headers: { "Content-Type": "application/json" },
+});
+setupAuthInterceptor(rebalanceApi);
+
+export const rebalanceService = {
+  getStatus: async (targets: RebalanceTarget[]): Promise<RebalanceStatus> => {
+    const response = await rebalanceApi.post<RebalanceStatus>("/status", {
+      targets,
+    });
+    return response.data;
+  },
+  getPlan: async (targets: RebalanceTarget[]): Promise<RebalancePlan> => {
+    const response = await rebalanceApi.post<RebalancePlan>("/plan", {
+      targets,
+    });
+    return response.data;
+  },
+  execute: async (
+    targets: RebalanceTarget[]
+  ): Promise<RebalanceExecuteResult> => {
+    const response = await rebalanceApi.post<RebalanceExecuteResult>(
+      "/execute",
+      { targets }
+    );
+    return response.data;
+  },
+  getEqualAllocation: async (
+    markets: string[],
+    krwReservePercent: number
+  ): Promise<EqualAllocationResult[]> => {
+    const response = await rebalanceApi.post<EqualAllocationResult[]>(
+      "/equal-allocation",
+      { markets, krwReservePercent }
+    );
+    return response.data;
+  },
+};
+
+// Strategy Params API
+const strategyParamApi = axios.create({
+  baseURL: "/api/strategy-params",
+  headers: { "Content-Type": "application/json" },
+});
+setupAuthInterceptor(strategyParamApi);
+
+export const strategyParamService = {
+  getStrategies: async (): Promise<string[]> => {
+    const response = await strategyParamApi.get<string[]>("/strategies");
+    return response.data;
+  },
+  getDefinitions: async (
+    strategyName: string
+  ): Promise<StrategyParamDefinition[]> => {
+    const response = await strategyParamApi.get<StrategyParamDefinition[]>(
+      `/definitions/${strategyName}`
+    );
+    return response.data;
+  },
+  getParams: async (strategyName: string): Promise<Record<string, any>> => {
+    const response = await strategyParamApi.get<Record<string, any>>(
+      `/${strategyName}`
+    );
+    return response.data;
+  },
+  getParamDetails: async (
+    strategyName: string
+  ): Promise<StrategyParamDetail[]> => {
+    const response = await strategyParamApi.get<StrategyParamDetail[]>(
+      `/${strategyName}/details`
+    );
+    return response.data;
+  },
+  updateParam: async (
+    strategyName: string,
+    key: string,
+    value: string
+  ): Promise<StrategyParamUpdateResult> => {
+    const response = await strategyParamApi.put<StrategyParamUpdateResult>(
+      `/${strategyName}/${key}`,
+      { value }
+    );
+    return response.data;
+  },
+  updateParams: async (
+    strategyName: string,
+    params: Record<string, string>
+  ): Promise<StrategyParamUpdateResult> => {
+    const response = await strategyParamApi.put<StrategyParamUpdateResult>(
+      `/${strategyName}`,
+      params
+    );
+    return response.data;
+  },
+  resetParams: async (
+    strategyName: string
+  ): Promise<StrategyParamUpdateResult> => {
+    const response = await strategyParamApi.delete<StrategyParamUpdateResult>(
+      `/${strategyName}`
+    );
+    return response.data;
+  },
+  resetParam: async (
+    strategyName: string,
+    key: string
+  ): Promise<StrategyParamUpdateResult> => {
+    const response = await strategyParamApi.delete<StrategyParamUpdateResult>(
+      `/${strategyName}/${key}`
+    );
+    return response.data;
+  },
+  getSummary: async (): Promise<StrategyParamSummary> => {
+    const response = await strategyParamApi.get<StrategyParamSummary>(
+      "/summary"
+    );
     return response.data;
   },
 };

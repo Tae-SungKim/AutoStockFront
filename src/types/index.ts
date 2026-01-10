@@ -294,7 +294,19 @@ export interface DailyProfitRecord {
   status: "MATCHED" | "HOLDING";
   netProfit: number;
   profitRate: string; // "1.23%" 형식
-  markets: string[];
+  market: string;
+}
+export interface DailyProfitResponse {
+  date: string;
+  buyCount: number;
+  sellCount: number;
+  buyAmount: number;
+  sellAmount: number;
+  fee: number;
+  status: "MATCHED" | "HOLDING";
+  netProfit: number;
+  profitRate: string; // "1.23%" 형식
+  markets: DailyProfitRecord[];
 }
 
 // Strategy Types
@@ -330,4 +342,263 @@ export interface StrategySetRequest {
 export interface StrategyResponse {
   message: string;
   strategies?: UserStrategy[];
+}
+
+// Alerts Types
+export interface MarketAlert {
+  market: string;
+  alertType: "SURGE" | "PLUNGE" | "VOLUME_SURGE";
+  currentPrice: number;
+  changeRate: number;
+  volumeChangeRate: number;
+  previousPrice: number;
+  detectedAt: string;
+  description: string;
+}
+
+export interface MarketScanResult {
+  totalMarkets: number;
+  surgingMarkets: number;
+  plungingMarkets: number;
+  normalMarkets: number;
+  avgChangeRate: number;
+  marketCondition: "BULL" | "BEAR" | "NEUTRAL";
+  alerts: MarketAlert[];
+  analyzedAt: string;
+}
+
+export interface TopGainerLoser {
+  market: string;
+  alertType: "TOP_GAINER" | "TOP_LOSER";
+  currentPrice: number;
+  changeRate: number;
+  detectedAt: string;
+  description: string;
+}
+
+// Dashboard Types
+export interface AssetStatus {
+  currency: string;
+  market: string;
+  balance: number;
+  avgBuyPrice: number;
+  currentPrice: number;
+  evaluationAmount: number;
+  profitLoss: number;
+  profitLossRate: number;
+}
+
+export interface MarketStatus {
+  totalMarkets: number;
+  surgingMarkets: number;
+  plungingMarkets: number;
+  marketCondition: "BULL" | "BEAR" | "NEUTRAL";
+}
+
+export interface RecentTrade {
+  id: number;
+  market: string;
+  tradeType: "BUY" | "SELL";
+  price: number;
+  volume: number;
+  amount: number;
+  createdAt: string;
+}
+
+export interface ProfitChartData {
+  date: string;
+  profitLoss: number;
+  cumulativeProfit: number;
+  tradeCount: number;
+}
+
+export interface DashboardData {
+  totalAsset: number;
+  krwBalance: number;
+  coinEvaluation: number;
+  totalProfitLoss: number;
+  totalProfitLossRate: number;
+  assets: AssetStatus[];
+  todayTradeCount: number;
+  totalTradeCount: number;
+  todayProfitLoss: number;
+  winRate: number;
+  marketStatus: MarketStatus;
+  recentTrades: RecentTrade[];
+  profitChart: ProfitChartData[];
+  updatedAt: string;
+}
+
+export interface DashboardSummary {
+  totalAsset: number;
+  krwBalance: number;
+  coinEvaluation: number;
+  coinCount: number;
+  updatedAt: string;
+}
+
+// Rebalancing Types
+export interface RebalanceTarget {
+  market: string;
+  targetPercent: number;
+}
+
+export interface RebalanceAllocation {
+  market: string;
+  currency: string;
+  balance: number;
+  currentPrice: number;
+  evaluationAmount: number;
+  currentPercent: number;
+  targetPercent: number;
+  deviation: number;
+  action: "BUY" | "SELL" | "HOLD";
+  actionAmount: number;
+}
+
+export interface RebalanceStatus {
+  totalAsset: number;
+  krwBalance: number;
+  krwPercent: number;
+  allocations: RebalanceAllocation[];
+}
+
+export interface RebalanceAction {
+  market: string;
+  actionType: "BUY" | "SELL";
+  amount: number;
+  volume: number;
+  priority: number;
+}
+
+export interface RebalancePlan {
+  currentStatus: RebalanceStatus;
+  actions: RebalanceAction[];
+  totalBuyAmount: number;
+  totalSellAmount: number;
+  executable: boolean;
+  message: string;
+}
+
+export interface RebalanceOrderResult {
+  uuid: string;
+  side: "bid" | "ask";
+  market: string;
+  state: string;
+  executedVolume: string;
+}
+
+export interface RebalanceExecuteResult {
+  success: boolean;
+  message: string;
+  executedCount: number;
+  failedCount: number;
+  orders: RebalanceOrderResult[];
+}
+
+export interface EqualAllocationResult {
+  market: string;
+  targetPercent: number;
+}
+
+// Backtest Visualization Types
+export interface BacktestTradeMarker {
+  timestamp: string;
+  type: "BUY" | "SELL";
+  price: number;
+  profitRate: number;
+  strategy: string;
+}
+
+export interface BacktestTradeAnalysis {
+  totalTrades: number;
+  buyCount: number;
+  sellCount: number;
+  winCount: number;
+  loseCount: number;
+  winRate: number;
+  avgProfitPerTrade: number;
+  avgWinProfit: number;
+  avgLossProfit: number;
+  profitFactor: number;
+  maxDrawdown: number;
+  sharpeRatio: number;
+  tradesByHour: {
+    label: string;
+    count: number;
+    winRate: number;
+    avgProfit: number;
+  }[];
+  tradesByDayOfWeek: {
+    label: string;
+    count: number;
+    winRate: number;
+    avgProfit: number;
+  }[];
+}
+
+export interface BacktestProfitChart {
+  labels: string[];
+  profitRates: number[];
+  totalAssets: number[];
+  benchmarkRates: number[];
+}
+
+export interface BacktestVisualizationResult {
+  backtestResult: BacktestResult;
+  profitChart: BacktestProfitChart;
+  tradeAnalysis: BacktestTradeAnalysis;
+  tradeMarkers: BacktestTradeMarker[];
+}
+
+export interface StrategyCompareResult {
+  strategies: string[];
+  profitRates: number[];
+  winRates: number[];
+  tradeCounts: number[];
+  sharpeRatios: number[];
+}
+
+export interface CoinHeatmapResult {
+  markets: string[];
+  profitRates: number[];
+  winRates: number[];
+  tradeCounts: number[];
+  bestMarket: string;
+  worstMarket: string;
+}
+
+// Strategy Parameter Types
+export interface StrategyParamDefinition {
+  key: string;
+  name: string;
+  description: string;
+  type: "INTEGER" | "DOUBLE" | "STRING" | "BOOLEAN";
+  defaultValue: string;
+  minValue?: number;
+  maxValue?: number;
+}
+
+export interface StrategyParamDetail extends StrategyParamDefinition {
+  value: string;
+  isCustom: boolean;
+}
+
+export interface StrategyParamUpdateResult {
+  success: boolean;
+  message: string;
+  parameter?: {
+    key: string;
+    value: string;
+    type: string;
+  };
+  updatedParams?: string[];
+}
+
+export interface StrategyParamSummary {
+  [strategyName: string]: {
+    totalParams: number;
+    customParams: number;
+    usingDefaults: boolean;
+  };
 }

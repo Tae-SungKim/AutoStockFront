@@ -16,6 +16,7 @@ import type {
   TradeProfitRecord,
   TradeProfitSummary,
   DailyProfitRecord,
+  DailyProfitResponse,
   Ticker,
 } from "../types";
 
@@ -34,7 +35,7 @@ export function TradeHistory() {
   );
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
-  const [dailyRecords, setDailyRecords] = useState<DailyProfitRecord>();
+  const [dailyRecords, setDailyRecords] = useState<DailyProfitResponse>();
 
   const fetchSummary = async () => {
     try {
@@ -277,7 +278,7 @@ export function TradeHistory() {
   };
 
   const renderDailyProfit = () => {
-    if (!dailyRecords || dailyRecords.length === 0) {
+    if (!dailyRecords) {
       return (
         <div className="text-center py-8 text-gray-400">
           일자별 수익률 데이터가 없습니다.
@@ -299,9 +300,7 @@ export function TradeHistory() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
           <div className="bg-gray-700/50 rounded-lg p-4">
             <p className="text-gray-400 text-sm mb-1">조회 기간</p>
-            <p className="text-lg font-bold text-white">
-              {dailyRecords.length}일
-            </p>
+            <p className="text-lg font-bold text-white">{""}일</p>
           </div>
           <div className="bg-gray-700/50 rounded-lg p-4">
             <p className="text-gray-400 text-sm mb-1">총 매수</p>
