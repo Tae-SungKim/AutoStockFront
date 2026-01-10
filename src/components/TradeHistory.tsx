@@ -15,7 +15,6 @@ import { tradeHistory, upbitApi } from "../api/upbitApi";
 import type {
   TradeProfitRecord,
   TradeProfitSummary,
-  DailyProfitRecord,
   DailyProfitResponse,
   Ticker,
 } from "../types";

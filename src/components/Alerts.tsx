@@ -9,17 +9,17 @@ const Alerts: React.FC = () => {
   const [topLosers, setTopLosers] = useState<TopGainerLoser[]>([]);
   const [marketAlerts, setMarketAlerts] = useState<MarketAlert[]>([]);
   const [searchMarket, setSearchMarket] = useState<string>("");
-  const [loading, setLoading] = useState<boolean>(false);
+  //const [loading, setLoading] = useState<boolean>(false);
 
   const fetchScanData = async () => {
     try {
-      setLoading(true);
+      //setLoading(true);
       const result = await alertService.scanMarket(50);
       setScanResult(result);
     } catch (error) {
       console.error("Failed to scan market", error);
     } finally {
-      setLoading(false);
+      //setLoading(false);
     }
   };
 
