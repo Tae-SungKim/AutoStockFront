@@ -34,7 +34,7 @@ export function TradeHistory() {
   );
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
-  const [dailyRecords, setDailyRecords] = useState<DailyProfitRecord[]>([]);
+  const [dailyRecords, setDailyRecords] = useState<DailyProfitRecord>();
 
   const fetchSummary = async () => {
     try {
@@ -286,12 +286,12 @@ export function TradeHistory() {
     }
 
     // 합계 계산
-    const totalBuyCount = dailyRecords.reduce((sum, r) => sum + r.buyCount, 0);
-    const totalSellCount = dailyRecords.reduce((sum, r) => sum + r.sellCount, 0);
-    const totalBuyAmount = dailyRecords.reduce((sum, r) => sum + r.buyAmount, 0);
-    const totalSellAmount = dailyRecords.reduce((sum, r) => sum + r.sellAmount, 0);
-    const totalNetProfit = dailyRecords.reduce((sum, r) => sum + r.netProfit, 0);
-    const totalFee = dailyRecords.reduce((sum, r) => sum + r.fee, 0);
+    const totalBuyCount = dailyRecords.buyCount;
+    const totalSellCount = dailyRecords.sellCount;
+    const totalBuyAmount = dailyRecords.buyAmount;
+    const totalSellAmount = dailyRecords.sellAmount;
+    const totalNetProfit = dailyRecords.netProfit;
+    const totalFee = dailyRecords.fee;
 
     return (
       <div className="space-y-4">
@@ -369,7 +369,7 @@ export function TradeHistory() {
               </tr>
             </thead>
             <tbody>
-              {dailyRecords.map((record) => {
+              {dailyRecords.markets.map((record) => {
                 // profitRate는 "1.23%" 형식의 문자열이므로 파싱
                 const profitRateNum = parseFloat(
                   record.profitRate?.replace("%", "") ?? "0"
@@ -418,7 +418,7 @@ export function TradeHistory() {
                       {record.profitRate}
                     </td>
                     <td className="py-3 px-4 text-left text-gray-300 text-xs">
-                      {record.markets.join(", ")}
+                      {record.market}
                     </td>
                   </tr>
                 );
