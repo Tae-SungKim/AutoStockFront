@@ -557,34 +557,108 @@ function MultiResultView({
                   </div>
 
                   {marketResult.tradeHistory && marketResult.tradeHistory.length > 0 && (
-                    <div className="space-y-1 max-h-40 overflow-y-auto">
-                      {marketResult.tradeHistory.map((trade, idx) => (
-                        <div
-                          key={idx}
-                          className="flex items-center justify-between text-xs bg-gray-600/30 rounded px-2 py-1"
-                        >
-                          <div className="flex items-center gap-2">
-                            {trade.type === "BUY" ? (
-                              <TrendingUp className="w-3 h-3 text-green-400" />
-                            ) : (
-                              <TrendingDown className="w-3 h-3 text-red-400" />
-                            )}
-                            <span className="text-gray-300">
-                              {trade.timestamp.replace("T", " ").substring(0, 16)}
-                            </span>
-                          </div>
-                          <span
-                            className={
-                              trade.profitRate >= 0
-                                ? "text-green-400"
-                                : "text-red-400"
-                            }
-                          >
-                            {trade.profitRate >= 0 ? "+" : ""}
-                            {formatNumber(trade.profitRate, 2)}%
-                          </span>
+                    <div className="space-y-2 max-h-80 overflow-y-auto">
+                      {/* 거래 내역 테이블 */}
+                      <table className="w-full text-xs">
+                        <thead className="sticky top-0 bg-gray-700">
+                          <tr className="text-gray-400 border-b border-gray-600">
+                            <th className="text-left py-2 px-2">시간</th>
+                            <th className="text-center py-2 px-1">타입</th>
+                            <th className="text-right py-2 px-2">가격</th>
+                            <th className="text-right py-2 px-2">수량</th>
+                            <th className="text-right py-2 px-2">금액</th>
+                            <th className="text-right py-2 px-2">잔액</th>
+                            <th className="text-right py-2 px-2">수익률</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {marketResult.tradeHistory.map((trade, idx) => (
+                            <tr
+                              key={idx}
+                              className={
+                                "border-b border-gray-600/50 " +
+                                (trade.type === "BUY"
+                                  ? "bg-green-500/5"
+                                  : "bg-red-500/5")
+                              }
+                            >
+                              <td className="py-2 px-2 text-gray-300">
+                                {trade.timestamp.replace("T", " ").substring(5, 16)}
+                              </td>
+                              <td className="py-2 px-1 text-center">
+                                <span
+                                  className={
+                                    "inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium " +
+                                    (trade.type === "BUY"
+                                      ? "bg-green-500/20 text-green-400"
+                                      : "bg-red-500/20 text-red-400")
+                                  }
+                                >
+                                  {trade.type === "BUY" ? (
+                                    <TrendingUp className="w-3 h-3" />
+                                  ) : (
+                                    <TrendingDown className="w-3 h-3" />
+                                  )}
+                                  {trade.type === "BUY" ? "매수" : "매도"}
+                                </span>
+                              </td>
+                              <td className="py-2 px-2 text-right text-white">
+                                ₩{formatNumber(trade.price)}
+                              </td>
+                              <td className="py-2 px-2 text-right text-gray-300">
+                                {trade.volume.toFixed(8)}
+                              </td>
+                              <td className="py-2 px-2 text-right text-white">
+                                ₩{formatNumber(trade.amount)}
+                              </td>
+                              <td className="py-2 px-2 text-right text-gray-300">
+                                ₩{formatNumber(trade.balance)}
+                              </td>
+                              <td
+                                className={
+                                  "py-2 px-2 text-right font-medium " +
+                                  (trade.profitRate >= 0
+                                    ? "text-green-400"
+                                    : "text-red-400")
+                                }
+                              >
+                                {trade.profitRate >= 0 ? "+" : ""}
+                                {formatNumber(trade.profitRate, 2)}%
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+
+                      {/* 거래 요약 */}
+                      <div className="grid grid-cols-3 gap-2 pt-2 border-t border-gray-600">
+                        <div className="text-center">
+                          <p className="text-gray-400 text-xs">총 거래</p>
+                          <p className="text-white text-sm font-medium">
+                            {marketResult.tradeHistory.length}회
+                          </p>
                         </div>
-                      ))}
+                        <div className="text-center">
+                          <p className="text-gray-400 text-xs">총 매수금액</p>
+                          <p className="text-green-400 text-sm font-medium">
+                            ₩{formatNumber(
+                              marketResult.tradeHistory
+                                .filter((t) => t.type === "BUY")
+                                .reduce((sum, t) => sum + t.amount, 0)
+                            )}
+                          </p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-gray-400 text-xs">총 매도금액</p>
+                          <p className="text-red-400 text-sm font-medium">
+                            ₩{formatNumber(
+                              marketResult.tradeHistory
+                                .filter((t) => t.type === "SELL")
+                                .reduce((sum, t) => sum + t.amount, 0)
+                            )}
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   )}
 
