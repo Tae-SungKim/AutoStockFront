@@ -34,7 +34,7 @@ export function TradeHistory() {
   );
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
-  const [dailyRecords, setDailyRecords] = useState<DailyProfitRecord>();
+  const [dailyRecords, setDailyRecords] = useState<DailyProfitRecord[]>([]);
 
   const fetchSummary = async () => {
     try {
@@ -277,13 +277,21 @@ export function TradeHistory() {
   };
 
   const renderDailyProfit = () => {
-    if (!dailyRecords) {
+    if (!dailyRecords || dailyRecords.length === 0) {
       return (
         <div className="text-center py-8 text-gray-400">
           일자별 수익률 데이터가 없습니다.
         </div>
       );
     }
+
+    // 합계 계산
+    const totalBuyCount = dailyRecords.reduce((sum, r) => sum + r.buyCount, 0);
+    const totalSellCount = dailyRecords.reduce((sum, r) => sum + r.sellCount, 0);
+    const totalBuyAmount = dailyRecords.reduce((sum, r) => sum + r.buyAmount, 0);
+    const totalSellAmount = dailyRecords.reduce((sum, r) => sum + r.sellAmount, 0);
+    const totalNetProfit = dailyRecords.reduce((sum, r) => sum + r.netProfit, 0);
+    const totalFee = dailyRecords.reduce((sum, r) => sum + r.fee, 0);
 
     return (
       <div className="space-y-4">
@@ -298,34 +306,19 @@ export function TradeHistory() {
           <div className="bg-gray-700/50 rounded-lg p-4">
             <p className="text-gray-400 text-sm mb-1">총 매수</p>
             <p className="text-lg font-bold text-red-400">
-              {formatNumber(
-                (dailyRecords || [])
-                  .filter((it) => ["MATCHED", "HOLDING"].includes(it.status))
-                  .map((it) => it.buyCount)
-                  .reduce((a, b) => {
-                    return a + b;
-                  }, 0)
-              )}
-              회 (sortedRecords || [])
+              {formatNumber(totalBuyCount)}회
             </p>
             <p className="text-xs text-gray-500 mt-1">
-              ₩
-              {formatNumber(
-                (dailyRecords || [])
-                  .map((it) => it.buyAmount)
-                  .reduce((a, b) => {
-                    return a + b;
-                  }, 0)
-              )}
+              ₩{formatNumber(totalBuyAmount)}
             </p>
           </div>
           <div className="bg-gray-700/50 rounded-lg p-4">
             <p className="text-gray-400 text-sm mb-1">총 매도</p>
             <p className="text-lg font-bold text-blue-400">
-              {formatNumber(dailyRecords.sellCount)}회
+              {formatNumber(totalSellCount)}회
             </p>
             <p className="text-xs text-gray-500 mt-1">
-              ₩{formatNumber(dailyRecords.sellAmount)}
+              ₩{formatNumber(totalSellAmount)}
             </p>
           </div>
           <div className="bg-gray-700/50 rounded-lg p-4">
@@ -333,14 +326,13 @@ export function TradeHistory() {
             <p
               className={
                 "text-lg font-bold " +
-                (dailyRecords.netProfit >= 0 ? "text-red-400" : "text-blue-400")
+                (totalNetProfit >= 0 ? "text-red-400" : "text-blue-400")
               }
             >
-              {formatNumber(dailyRecords.netProfit)}
+              {totalNetProfit >= 0 ? "+" : ""}₩{formatNumber(totalNetProfit)}
             </p>
             <p className="text-xs text-yellow-400 mt-1">
-              수수료: -₩
-              {formatNumber(dailyRecords.fee)}
+              수수료: -₩{formatNumber(totalFee)}
             </p>
           </div>
         </div>
@@ -377,7 +369,7 @@ export function TradeHistory() {
               </tr>
             </thead>
             <tbody>
-              {dailyRecords.markets.map((record) => {
+              {dailyRecords.map((record) => {
                 // profitRate는 "1.23%" 형식의 문자열이므로 파싱
                 const profitRateNum = parseFloat(
                   record.profitRate?.replace("%", "") ?? "0"
@@ -426,7 +418,7 @@ export function TradeHistory() {
                       {record.profitRate}
                     </td>
                     <td className="py-3 px-4 text-left text-gray-300 text-xs">
-                      {record.market}
+                      {record.markets.join(", ")}
                     </td>
                   </tr>
                 );
