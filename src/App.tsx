@@ -15,16 +15,18 @@ import Dashboard from "./components/Dashboard";
 import Alerts from "./components/Alerts";
 import Rebalance from "./components/Rebalance";
 import StrategyParams from "./components/StrategyParams";
+import StrategyOptimizer from "./components/StrategyOptimizer";
 import {
   LayoutDashboard,
   LineChart,
   AlertTriangle,
   Scale,
   Settings,
+  Zap,
 } from "lucide-react";
 
 type AuthPage = "login" | "register";
-type TabType = "trading" | "dashboard" | "alerts" | "rebalance" | "strategy-params";
+type TabType = "trading" | "dashboard" | "alerts" | "rebalance" | "strategy-params" | "optimizer";
 
 function MainApp() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -57,6 +59,7 @@ function MainApp() {
     { id: "alerts" as TabType, label: "급등/급락", icon: AlertTriangle },
     { id: "rebalance" as TabType, label: "리밸런싱", icon: Scale },
     { id: "strategy-params" as TabType, label: "전략 설정", icon: Settings },
+    { id: "optimizer" as TabType, label: "전략 최적화", icon: Zap },
   ];
 
   const renderTabContent = () => {
@@ -73,6 +76,8 @@ function MainApp() {
         return <Rebalance />;
       case "strategy-params":
         return <StrategyParams />;
+      case "optimizer":
+        return <StrategyOptimizer />;
       case "trading":
       default:
         return (

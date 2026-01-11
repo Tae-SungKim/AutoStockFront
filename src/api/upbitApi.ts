@@ -33,6 +33,11 @@ import type {
   StrategyParamDetail,
   StrategyParamUpdateResult,
   StrategyParamSummary,
+  OptimizerStats,
+  OptimizeResult,
+  CurrentParams,
+  ApplyParamsResponse,
+  OptimizedParams,
 } from "../types";
 
 // 공통 인터셉터 설정 함수
@@ -610,6 +615,55 @@ export const strategyParamService = {
   getSummary: async (): Promise<StrategyParamSummary> => {
     const response = await strategyParamApi.get<StrategyParamSummary>(
       "/summary"
+    );
+    return response.data;
+  },
+};
+
+// Strategy Optimizer API
+const strategyOptimizerApi = axios.create({
+  baseURL: "/api/strategy-optimizer",
+  headers: { "Content-Type": "application/json" },
+});
+setupAuthInterceptor(strategyOptimizerApi);
+
+export const strategyOptimizerService = {
+  getStats: async (): Promise<OptimizerStats> => {
+    const response = await strategyOptimizerApi.get<OptimizerStats>("/stats");
+    return response.data;
+  },
+  optimize: async (): Promise<OptimizeResult> => {
+    const response = await strategyOptimizerApi.post<OptimizeResult>("/optimize");
+    return response.data;
+  },
+  optimizeMarket: async (market: string): Promise<OptimizeResult> => {
+    const response = await strategyOptimizerApi.post<OptimizeResult>(
+      `/optimize/${market}`
+    );
+    return response.data;
+  },
+  optimizeAndApply: async (): Promise<OptimizeResult> => {
+    const response = await strategyOptimizerApi.post<OptimizeResult>(
+      "/optimize-and-apply"
+    );
+    return response.data;
+  },
+  optimizeAndApplyMarket: async (market: string): Promise<OptimizeResult> => {
+    const response = await strategyOptimizerApi.post<OptimizeResult>(
+      `/optimize-and-apply/${market}`
+    );
+    return response.data;
+  },
+  getCurrentParams: async (): Promise<CurrentParams> => {
+    const response = await strategyOptimizerApi.get<CurrentParams>(
+      "/current-params"
+    );
+    return response.data;
+  },
+  applyParams: async (params: OptimizedParams): Promise<ApplyParamsResponse> => {
+    const response = await strategyOptimizerApi.post<ApplyParamsResponse>(
+      "/apply-params",
+      params
     );
     return response.data;
   },

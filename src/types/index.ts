@@ -608,3 +608,63 @@ export interface StrategyParamSummary {
     usingDefaults: boolean;
   };
 }
+
+// Strategy Optimizer Types
+export interface OptimizerStats {
+  totalMarkets: number;
+  totalCandles: number;
+  markets: {
+    market: string;
+    candleCount: number;
+    startDate: string;
+    endDate: string;
+  }[];
+}
+
+export interface OptimizedParams {
+  bollingerPeriod: number;
+  bollingerMultiplier: number;
+  rsiPeriod: number;
+  rsiBuyThreshold: number;
+  rsiSellThreshold: number;
+  volumeIncreaseRate: number;
+  stopLossRate: number;
+  takeProfitRate: number;
+  trailingStopRate: number;
+}
+
+export interface OptimizeResult {
+  success: boolean;
+  message: string;
+  expectedWinRate: number;
+  expectedProfitRate: number;
+  totalSignals: number;
+  params: OptimizedParams;
+}
+
+export interface CurrentParams {
+  market: string;
+  success: boolean;
+  dataDrivenParams: {
+    bollingerPeriod: number;
+    bollingerMultiplier: number;
+    rsiPeriod: number;
+    rsiBuyThreshold: number;
+    rsiSellThreshold: number;
+    volumeIncreaseRate: number;
+    stopLossRate: number;
+    takeProfitRate: number;
+    expectedWinRate: number;
+    expectedProfitRate: number;
+  };
+  strategyParams: {
+    [strategyName: string]: {
+      [paramKey: string]: number | string;
+    };
+  };
+}
+
+export interface ApplyParamsResponse {
+  success: boolean;
+  message: string;
+}
