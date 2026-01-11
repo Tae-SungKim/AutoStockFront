@@ -19,6 +19,7 @@ import type {
   MarketScanResult,
   TopGainerLoser,
   DashboardData,
+  DashboardResponse,
   DashboardSummary,
   RebalanceStatus,
   RebalancePlan,
@@ -484,8 +485,8 @@ setupAuthInterceptor(dashboardApi);
 
 export const dashboardService = {
   getDashboardData: async (): Promise<DashboardData> => {
-    const response = await dashboardApi.get<DashboardData>("");
-    return response.data;
+    const response = await dashboardApi.get<DashboardResponse>("");
+    return response.data.data;
   },
   getSummary: async (): Promise<DashboardSummary> => {
     const response = await dashboardApi.get<DashboardSummary>("/summary");

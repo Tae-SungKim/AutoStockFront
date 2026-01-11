@@ -423,10 +423,16 @@ export interface DashboardData {
   totalTradeCount: number;
   todayProfitLoss: number;
   winRate: number;
-  marketStatus: MarketStatus;
+  marketStatus: MarketStatus | null;
   recentTrades: RecentTrade[];
   profitChart: ProfitChartData[];
   updatedAt: string;
+}
+
+export interface DashboardResponse {
+  data: DashboardData;
+  success: boolean;
+  apiKeyRequired: boolean;
 }
 
 export interface DashboardSummary {
