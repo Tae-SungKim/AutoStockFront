@@ -112,27 +112,27 @@ const Dashboard: React.FC = () => {
               <p className="text-sm text-gray-500">시장 상태</p>
               <p
                 className={`text-xl font-bold ${
-                  data.marketStatus.marketCondition === "BULL"
+                  data.marketStatus?.marketCondition === "BULL"
                     ? "text-red-500"
-                    : data.marketStatus.marketCondition === "BEAR"
+                    : data.marketStatus?.marketCondition === "BEAR"
                     ? "text-blue-500"
                     : "text-gray-500"
                 }`}
               >
-                {data.marketStatus.marketCondition}
+                {data.marketStatus?.marketCondition || "N/A"}
               </p>
             </div>
-            {data.marketStatus.marketCondition === "BULL" ? (
+            {data.marketStatus?.marketCondition === "BULL" ? (
               <ArrowUp className="text-red-500" size={24} />
-            ) : data.marketStatus.marketCondition === "BEAR" ? (
+            ) : data.marketStatus?.marketCondition === "BEAR" ? (
               <ArrowDown className="text-blue-500" size={24} />
             ) : (
               <Activity className="text-gray-500" size={24} />
             )}
           </div>
           <div className="mt-2 text-xs text-gray-500">
-            급등 {data.marketStatus.surgingMarkets} / 급락{" "}
-            {data.marketStatus.plungingMarkets}
+            급등 {data.marketStatus?.surgingMarkets ?? 0} / 급락{" "}
+            {data.marketStatus?.plungingMarkets ?? 0}
           </div>
         </div>
       </div>
@@ -144,7 +144,7 @@ const Dashboard: React.FC = () => {
           <h2 className="text-lg font-semibold mb-4">수익 추이</h2>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={data.profitChart}>
+              <LineChart data={data.profitChart || []}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="date" />
                 <YAxis />
@@ -171,7 +171,7 @@ const Dashboard: React.FC = () => {
         <div className="bg-white p-4 rounded-lg shadow border border-gray-100">
           <h2 className="text-lg font-semibold mb-4">최근 거래</h2>
           <div className="space-y-3 max-h-64 overflow-y-auto">
-            {data.recentTrades.length === 0 ? (
+            {!data.recentTrades || data.recentTrades.length === 0 ? (
               <p className="text-gray-500 text-center py-4">거래 내역 없음</p>
             ) : (
               data.recentTrades.map((trade) => (
@@ -234,7 +234,7 @@ const Dashboard: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {data.assets.map((asset) => (
+              {(data.assets || []).map((asset) => (
                 <tr key={asset.market}>
                   <td className="px-6 py-4 whitespace-nowrap font-medium">
                     {asset.currency}

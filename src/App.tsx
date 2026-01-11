@@ -11,14 +11,27 @@ import { AutoTrading } from "./components/AutoTrading";
 import { Backtest } from "./components/Backtest";
 import { TradeHistory } from "./components/TradeHistory";
 import { UserSettings } from "./components/UserSettings";
+import Dashboard from "./components/Dashboard";
+import Alerts from "./components/Alerts";
+import Rebalance from "./components/Rebalance";
+import StrategyParams from "./components/StrategyParams";
+import {
+  LayoutDashboard,
+  LineChart,
+  AlertTriangle,
+  Scale,
+  Settings,
+} from "lucide-react";
 
 type AuthPage = "login" | "register";
+type TabType = "trading" | "dashboard" | "alerts" | "rebalance" | "strategy-params";
 
 function MainApp() {
   const { isAuthenticated, isLoading } = useAuth();
   const [selectedMarket, setSelectedMarket] = useState("KRW-BTC");
   const [authPage, setAuthPage] = useState<AuthPage>("login");
   const [showSettings, setShowSettings] = useState(false);
+  const [activeTab, setActiveTab] = useState<TabType>("trading");
 
   if (isLoading) {
     return (
@@ -38,18 +51,35 @@ function MainApp() {
     return <RegisterPage onSwitchToLogin={() => setAuthPage("login")} />;
   }
 
-  return (
-    <div className="min-h-screen bg-gray-900">
-      <Header onSettingsClick={() => setShowSettings(!showSettings)} />
+  const tabs = [
+    { id: "trading" as TabType, label: "트레이딩", icon: LineChart },
+    { id: "dashboard" as TabType, label: "대시보드", icon: LayoutDashboard },
+    { id: "alerts" as TabType, label: "급등/급락", icon: AlertTriangle },
+    { id: "rebalance" as TabType, label: "리밸런싱", icon: Scale },
+    { id: "strategy-params" as TabType, label: "전략 설정", icon: Settings },
+  ];
 
-      <main className="container mx-auto px-4 py-6">
-        {showSettings ? (
-          <UserSettings />
-        ) : (
+  const renderTabContent = () => {
+    if (showSettings) {
+      return <UserSettings />;
+    }
+
+    switch (activeTab) {
+      case "dashboard":
+        return <Dashboard />;
+      case "alerts":
+        return <Alerts />;
+      case "rebalance":
+        return <Rebalance />;
+      case "strategy-params":
+        return <StrategyParams />;
+      case "trading":
+      default:
+        return (
           <div className="grid grid-cols-12 gap-6">
             {/* 왼쪽 사이드바 - 마켓 목록 */}
             <div className="col-span-12 lg:col-span-3 xl:col-span-2">
-              <div className="h-[calc(100vh-140px)] sticky top-6">
+              <div className="h-[calc(100vh-200px)] sticky top-6">
                 <MarketList
                   selectedMarket={selectedMarket}
                   onSelectMarket={setSelectedMarket}
@@ -92,7 +122,43 @@ function MainApp() {
               </div>
             </div>
           </div>
-        )}
+        );
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-900">
+      <Header onSettingsClick={() => setShowSettings(!showSettings)} />
+
+      {/* Tab Navigation */}
+      {!showSettings && (
+        <div className="bg-gray-800 border-b border-gray-700">
+          <div className="container mx-auto px-4">
+            <div className="flex gap-1 overflow-x-auto py-2">
+              {tabs.map((tab) => {
+                const Icon = tab.icon;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                      activeTab === tab.id
+                        ? "bg-purple-600 text-white"
+                        : "text-gray-400 hover:text-white hover:bg-gray-700"
+                    }`}
+                  >
+                    <Icon size={16} />
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <main className={activeTab === "trading" ? "container mx-auto px-4 py-6" : ""}>
+        {renderTabContent()}
       </main>
     </div>
   );
