@@ -39,7 +39,7 @@ export function ExitReasonChart({
     );
   }
 
-  const handlePieClick = (data: any, index: number) => {
+  const handlePieClick = (data: any) => {
     if (onReasonClick) {
       // 같은 항목 클릭 시 필터 해제
       if (selectedReason === data.reason) {
@@ -151,7 +151,7 @@ export function ExitReasonChart({
                       onClick={() => {
                         const data = chartData[index];
                         if (data && onReasonClick) {
-                          handlePieClick(data, index);
+                          handlePieClick(data);
                         }
                       }}
                       className={`flex items-center gap-1 px-2 py-1 rounded text-xs transition-opacity ${
@@ -206,7 +206,7 @@ export function ExitReasonChart({
           return (
             <button
               key={index}
-              onClick={() => onReasonClick && handlePieClick(item, index)}
+              onClick={() => onReasonClick && handlePieClick(item)}
               className={`w-full flex items-center justify-between p-2 rounded transition-all ${
                 onReasonClick ? "hover:bg-gray-600/30 cursor-pointer" : ""
               } ${isSelected ? "bg-gray-600/50 ring-1 ring-gray-500" : ""} ${
