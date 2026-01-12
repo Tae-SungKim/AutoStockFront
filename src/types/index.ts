@@ -77,6 +77,18 @@ export interface TradingStatus {
   accounts: Account[];
 }
 
+// Exit Reason Types
+export type ExitReason =
+  | "STOP_LOSS_FIXED"
+  | "STOP_LOSS_ATR"
+  | "TRAILING_STOP"
+  | "TAKE_PROFIT"
+  | "SIGNAL_INVALID"
+  | "FAKE_REBOUND"
+  | "VOLUME_DROP"
+  | "OVERHEATED"
+  | "TIMEOUT";
+
 export interface TradeHistoryItem {
   timestamp: string;
   type: "BUY" | "SELL";
@@ -88,6 +100,7 @@ export interface TradeHistoryItem {
   totalAsset: number;
   profitRate: number;
   strategy: string;
+  exitReason?: ExitReason; // 매도 시 종료 사유
 }
 
 export interface BacktestResult {
@@ -112,6 +125,7 @@ export interface BacktestResult {
   loseCount: number;
   winRate: number;
   tradeHistory: TradeHistoryItem[];
+  exitReasonStats?: Record<ExitReason, number>; // 종료 사유별 통계
 }
 
 export interface StrategySummary {
@@ -168,6 +182,7 @@ export interface SimulationResult {
   worstMarketProfitRate: number;
   marketResults: BacktestResult[];
   profitRateByMarket: Record<string, number>;
+  totalExitReasonStats?: Record<ExitReason, number>; // 멀티 코인 전체 종료 사유 통계
 }
 
 export interface TradeProfitRecord {

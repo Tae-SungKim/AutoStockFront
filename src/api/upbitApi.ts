@@ -261,6 +261,122 @@ export const backtest = {
     return response.data;
   },
 
+  // DB 데이터로 멀티 코인 백테스트 (청크 단위, 진행 상황 콜백)
+  multiDbWithProgress: async (
+    markets: string[],
+    strategy: string,
+    unit: number = 1,
+    chunkSize: number = 5,
+    onProgress?: (current: number, total: number, currentMarket: string, completed: string[]) => void
+  ): Promise<SimulationResult> => {
+    const chunks: string[][] = [];
+    for (let i = 0; i < markets.length; i += chunkSize) {
+      chunks.push(markets.slice(i, i + chunkSize));
+    }
+
+    let allMarketResults: BacktestResult[] = [];
+    let completedMarkets: string[] = [];
+    let processedCount = 0;
+
+    for (const chunk of chunks) {
+      // 현재 청크의 첫 번째 마켓을 현재 처리 중으로 표시
+      if (onProgress) {
+        onProgress(processedCount, markets.length, chunk[0], completedMarkets);
+      }
+
+      // 청크 단위로 백테스트 실행
+      const response = await backtestApi.get<SimulationResult>("/multi/db", {
+        params: {
+          markets: chunk.join(","),
+          strategy,
+          unit,
+        },
+      });
+
+      // 결과 누적
+      allMarketResults = [...allMarketResults, ...response.data.marketResults];
+      completedMarkets = [...completedMarkets, ...chunk];
+      processedCount += chunk.length;
+
+      // 진행 상황 업데이트
+      if (onProgress) {
+        onProgress(processedCount, markets.length, "", completedMarkets);
+      }
+    }
+
+    // 최종 결과 집계
+    const lastResult = allMarketResults[allMarketResults.length - 1];
+    if (!lastResult) {
+      throw new Error("No backtest results");
+    }
+
+    // 전체 통계 계산
+    const totalInitialBalance = allMarketResults.reduce(
+      (sum, r) => sum + r.initialBalance,
+      0
+    );
+    const totalFinalAsset = allMarketResults.reduce(
+      (sum, r) => sum + r.finalTotalAsset,
+      0
+    );
+    const totalProfitRate = ((totalFinalAsset - totalInitialBalance) / totalInitialBalance) * 100;
+    const averageProfitRate =
+      allMarketResults.reduce((sum, r) => sum + r.totalProfitRate, 0) /
+      allMarketResults.length;
+    const averageWinRate =
+      allMarketResults.reduce((sum, r) => sum + r.winRate, 0) /
+      allMarketResults.length;
+    const profitableMarkets = allMarketResults.filter(
+      (r) => r.totalProfitRate > 0
+    ).length;
+    const losingMarkets = allMarketResults.filter(
+      (r) => r.totalProfitRate <= 0
+    ).length;
+
+    // 최고/최저 마켓 찾기
+    const sortedByProfit = [...allMarketResults].sort(
+      (a, b) => b.totalProfitRate - a.totalProfitRate
+    );
+    const bestMarket = sortedByProfit[0];
+    const worstMarket = sortedByProfit[sortedByProfit.length - 1];
+
+    // exitReasonStats 통합 (있는 경우)
+    const totalExitReasonStats: Record<string, number> = {};
+    allMarketResults.forEach((result) => {
+      if (result.exitReasonStats) {
+        Object.entries(result.exitReasonStats).forEach(([reason, count]) => {
+          totalExitReasonStats[reason] = (totalExitReasonStats[reason] || 0) + count;
+        });
+      }
+    });
+
+    const finalResult: SimulationResult = {
+      strategy,
+      totalMarkets: markets.length,
+      initialBalancePerMarket: totalInitialBalance / markets.length,
+      totalInitialBalance,
+      totalFinalAsset,
+      totalProfitRate,
+      averageProfitRate,
+      averageWinRate,
+      profitableMarkets,
+      losingMarkets,
+      bestMarket: bestMarket.market,
+      bestMarketProfitRate: bestMarket.totalProfitRate,
+      worstMarket: worstMarket.market,
+      worstMarketProfitRate: worstMarket.totalProfitRate,
+      marketResults: allMarketResults,
+      profitRateByMarket: Object.fromEntries(
+        allMarketResults.map((r) => [r.market, r.totalProfitRate])
+      ),
+      totalExitReasonStats: Object.keys(totalExitReasonStats).length > 0
+        ? totalExitReasonStats
+        : undefined,
+    };
+
+    return finalResult;
+  },
+
   // DB에 저장된 마켓 목록 조회
   getMarkets: async (): Promise<string[]> => {
     const response = await backtestApi.get<string[]>("/markets/db");

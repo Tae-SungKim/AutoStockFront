@@ -17,7 +17,11 @@ import type {
   BacktestResult,
   SimulationResult,
   AvailableStrategy,
+  ExitReason,
 } from "../types";
+import { ExitReasonChart } from "./ExitReasonChart";
+import { EXIT_REASON_LABELS } from "../utils/exitReasonUtils";
+import { ProgressBar } from "./ProgressBar";
 
 type TabType = "single" | "multi" | "alerts"; // alerts 탭 추가
 
@@ -40,6 +44,14 @@ export function Backtest() {
 
   const [alerts, setAlerts] = useState<any[]>([]); // 급등/급락 감지 결과 상태 추가
   const [alertLoading, setAlertLoading] = useState(false);
+
+  // 멀티 백테스트 진행 상황
+  const [progressState, setProgressState] = useState<{
+    current: number;
+    total: number;
+    currentMarket: string;
+    completedMarkets: string[];
+  } | null>(null);
 
   const formatNumber = (num: number, decimals: number = 0) => {
     return new Intl.NumberFormat("ko-KR", {
@@ -131,15 +143,39 @@ export function Backtest() {
     try {
       setLoading(true);
       setError(null);
-      const data = await backtest.multiDb(
+      setProgressState(null);
+      setMultiResult(null); // 이전 결과 초기화
+
+      // 진행 상황 콜백 함수
+      const handleProgress = (
+        current: number,
+        total: number,
+        currentMarket: string,
+        completed: string[]
+      ) => {
+        setProgressState({
+          current,
+          total,
+          currentMarket,
+          completedMarkets: completed,
+        });
+      };
+
+      // 청크 단위로 백테스트 실행 (5개씩)
+      const data = await backtest.multiDbWithProgress(
         selectedMarkets,
         selectedStrategy,
-        unit
+        unit,
+        5, // 청크 사이즈
+        handleProgress
       );
+
       setMultiResult(data);
+      setProgressState(null); // 완료 후 프로그래스 숨김
     } catch (err) {
       setError("멀티마켓 백테스트 실행에 실패했습니다.");
       console.error(err);
+      setProgressState(null);
     } finally {
       setLoading(false);
     }
@@ -384,6 +420,16 @@ export function Backtest() {
             </div>
           </div>
 
+          {/* 프로그래스 바 */}
+          {progressState && (
+            <ProgressBar
+              total={progressState.total}
+              current={progressState.current}
+              currentMarket={progressState.currentMarket}
+              completedMarkets={progressState.completedMarkets}
+            />
+          )}
+
           {/* 멀티 마켓 결과 */}
           {multiResult && !loading && (
             <MultiResultView result={multiResult} formatNumber={formatNumber} />
@@ -454,6 +500,15 @@ function SingleResultView({
   result: BacktestResult;
   formatNumber: (num: number, decimals?: number) => string;
 }) {
+  const [selectedExitReason, setSelectedExitReason] = useState<ExitReason | null>(null);
+
+  // exitReason으로 거래 내역 필터링
+  const filteredTradeHistory = selectedExitReason
+    ? result.tradeHistory.filter(
+        (trade) => trade.type === "SELL" && trade.exitReason === selectedExitReason
+      )
+    : result.tradeHistory;
+
   return (
     <div className="space-y-4">
       <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg p-4">
@@ -501,6 +556,109 @@ function SingleResultView({
           value={formatNumber(result.buyAndHoldRate, 2) + "%"}
         />
       </div>
+
+      {/* 종료 사유 차트 */}
+      {result.exitReasonStats && (
+        <ExitReasonChart
+          exitReasonStats={result.exitReasonStats}
+          onReasonClick={setSelectedExitReason}
+          selectedReason={selectedExitReason}
+        />
+      )}
+
+      {/* 거래 내역 */}
+      {result.tradeHistory && result.tradeHistory.length > 0 && (
+        <div className="bg-gray-700/50 rounded-lg p-4">
+          <h3 className="text-white font-medium mb-3">
+            거래 내역
+            {selectedExitReason && (
+              <span className="text-sm text-gray-400 ml-2">
+                ({EXIT_REASON_LABELS[selectedExitReason]} 필터링됨: {filteredTradeHistory.length}건)
+              </span>
+            )}
+          </h3>
+          <div className="max-h-96 overflow-y-auto">
+            <table className="w-full text-xs">
+              <thead className="sticky top-0 bg-gray-700">
+                <tr className="text-gray-400 border-b border-gray-600">
+                  <th className="text-left py-2 px-2">시간</th>
+                  <th className="text-center py-2 px-1">타입</th>
+                  <th className="text-right py-2 px-2">가격</th>
+                  <th className="text-right py-2 px-2">수량</th>
+                  <th className="text-right py-2 px-2">금액</th>
+                  <th className="text-right py-2 px-2">수익률</th>
+                  <th className="text-center py-2 px-2">종료사유</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredTradeHistory.map((trade, idx) => (
+                  <tr
+                    key={idx}
+                    className={
+                      "border-b border-gray-600/50 " +
+                      (trade.type === "BUY"
+                        ? "bg-green-500/5"
+                        : "bg-red-500/5")
+                    }
+                  >
+                    <td className="py-2 px-2 text-gray-300">
+                      {trade.timestamp
+                        .replace("T", " ")
+                        .substring(5, 16)}
+                    </td>
+                    <td className="py-2 px-1 text-center">
+                      <span
+                        className={
+                          "inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium " +
+                          (trade.type === "BUY"
+                            ? "bg-green-500/20 text-green-400"
+                            : "bg-red-500/20 text-red-400")
+                        }
+                      >
+                        {trade.type === "BUY" ? (
+                          <TrendingUp className="w-3 h-3" />
+                        ) : (
+                          <TrendingDown className="w-3 h-3" />
+                        )}
+                        {trade.type === "BUY" ? "매수" : "매도"}
+                      </span>
+                    </td>
+                    <td className="py-2 px-2 text-right text-white">
+                      ₩{formatNumber(trade.price)}
+                    </td>
+                    <td className="py-2 px-2 text-right text-gray-300">
+                      {trade.volume.toFixed(8)}
+                    </td>
+                    <td className="py-2 px-2 text-right text-white">
+                      ₩{formatNumber(trade.amount)}
+                    </td>
+                    <td
+                      className={
+                        "py-2 px-2 text-right font-medium " +
+                        (trade.profitRate >= 0
+                          ? "text-green-400"
+                          : "text-red-400")
+                      }
+                    >
+                      {trade.profitRate >= 0 ? "+" : ""}
+                      {formatNumber(trade.profitRate, 2)}%
+                    </td>
+                    <td className="py-2 px-2 text-center">
+                      {trade.type === "SELL" && trade.exitReason ? (
+                        <span className="text-gray-300 text-xs">
+                          {EXIT_REASON_LABELS[trade.exitReason]}
+                        </span>
+                      ) : (
+                        <span className="text-gray-600 text-xs">-</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -513,6 +671,7 @@ function MultiResultView({
   formatNumber: (num: number, decimals?: number) => string;
 }) {
   const [expandedMarket, setExpandedMarket] = useState<string | null>(null);
+  const [selectedExitReason, setSelectedExitReason] = useState<ExitReason | null>(null);
 
   return (
     <div className="space-y-4">
@@ -583,6 +742,15 @@ function MultiResultView({
           positive={result.bestMarketProfitRate >= 0}
         />
       </div>
+
+      {/* 멀티 코인 전체 종료 사유 차트 */}
+      {result.totalExitReasonStats && (
+        <ExitReasonChart
+          exitReasonStats={result.totalExitReasonStats}
+          onReasonClick={setSelectedExitReason}
+          selectedReason={selectedExitReason}
+        />
+      )}
 
       {/* Market Results */}
       <div>
@@ -678,10 +846,17 @@ function MultiResultView({
                               <th className="text-right py-2 px-2">금액</th>
                               <th className="text-right py-2 px-2">잔액</th>
                               <th className="text-right py-2 px-2">수익률</th>
+                              <th className="text-center py-2 px-2">종료사유</th>
                             </tr>
                           </thead>
                           <tbody>
-                            {marketResult.tradeHistory.map((trade, idx) => (
+                            {marketResult.tradeHistory
+                              .filter((trade) => {
+                                // 선택된 exitReason이 있으면 필터링
+                                if (!selectedExitReason) return true;
+                                return trade.type === "SELL" && trade.exitReason === selectedExitReason;
+                              })
+                              .map((trade, idx) => (
                               <tr
                                 key={idx}
                                 className={
@@ -735,6 +910,15 @@ function MultiResultView({
                                 >
                                   {trade.profitRate >= 0 ? "+" : ""}
                                   {formatNumber(trade.profitRate, 2)}%
+                                </td>
+                                <td className="py-2 px-2 text-center">
+                                  {trade.type === "SELL" && trade.exitReason ? (
+                                    <span className="text-gray-300 text-xs">
+                                      {EXIT_REASON_LABELS[trade.exitReason]}
+                                    </span>
+                                  ) : (
+                                    <span className="text-gray-600 text-xs">-</span>
+                                  )}
                                 </td>
                               </tr>
                             ))}
