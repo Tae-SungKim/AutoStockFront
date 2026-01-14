@@ -704,7 +704,7 @@ export interface SimulationTaskStatus {
   errorMessage?: string;
 }
 
-export interface SimulationResult {
+export interface AsyncSimulationResult {
   status: "COMPLETED" | "FAILED";
   result?: OptimizeResult;
   errorMessage?: string;

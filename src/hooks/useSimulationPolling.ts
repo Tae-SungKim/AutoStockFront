@@ -1,13 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { strategyOptimizerService } from "../api/upbitApi";
-import type { SimulationTaskStatus, SimulationResult } from "../types";
+import type { SimulationTaskStatus, AsyncSimulationResult } from "../types";
 
 const POLLING_INTERVAL = 2500; // 2.5초
 const MAX_RETRIES = 3;
 
 interface UseSimulationPollingResult {
   status: SimulationTaskStatus | null;
-  result: SimulationResult | null;
+  result: AsyncSimulationResult | null;
   error: string | null;
   isPolling: boolean;
   startPolling: (taskId: string) => void;
@@ -18,7 +18,7 @@ interface UseSimulationPollingResult {
 export function useSimulationPolling(): UseSimulationPollingResult {
   const [taskId, setTaskId] = useState<string | null>(null);
   const [status, setStatus] = useState<SimulationTaskStatus | null>(null);
-  const [result, setResult] = useState<SimulationResult | null>(null);
+  const [result, setResult] = useState<AsyncSimulationResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPolling, setIsPolling] = useState(false);
 

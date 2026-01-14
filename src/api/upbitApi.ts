@@ -38,6 +38,9 @@ import type {
   CurrentParams,
   ApplyParamsResponse,
   OptimizedParams,
+  SimulationTask,
+  SimulationTaskStatus,
+  AsyncSimulationResult,
 } from "../types";
 
 // 공통 인터셉터 설정 함수
@@ -785,22 +788,22 @@ export const strategyOptimizerService = {
   },
 
   // 비동기 최적화 API
-  startAsyncOptimization: async (): Promise<import("../types").SimulationTask> => {
-    const response = await strategyOptimizerApi.post<import("../types").SimulationTask>(
+  startAsyncOptimization: async (): Promise<SimulationTask> => {
+    const response = await strategyOptimizerApi.post<SimulationTask>(
       "/async/optimize-and-apply"
     );
     return response.data;
   },
 
-  getTaskStatus: async (taskId: string): Promise<import("../types").SimulationTaskStatus> => {
-    const response = await strategyOptimizerApi.get<import("../types").SimulationTaskStatus>(
+  getTaskStatus: async (taskId: string): Promise<SimulationTaskStatus> => {
+    const response = await strategyOptimizerApi.get<SimulationTaskStatus>(
       `/tasks/${taskId}`
     );
     return response.data;
   },
 
-  getTaskResult: async (taskId: string): Promise<import("../types").SimulationResult> => {
-    const response = await strategyOptimizerApi.get<import("../types").SimulationResult>(
+  getTaskResult: async (taskId: string): Promise<AsyncSimulationResult> => {
+    const response = await strategyOptimizerApi.get<AsyncSimulationResult>(
       `/result/${taskId}`
     );
     return response.data;

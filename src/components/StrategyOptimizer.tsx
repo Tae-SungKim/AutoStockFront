@@ -14,7 +14,6 @@ import {
   ChevronDown,
   ChevronUp,
   Upload,
-  Clock,
 } from "lucide-react";
 import { useSimulationPolling } from "../hooks/useSimulationPolling";
 import { SimulationProgressView } from "./SimulationProgressView";
