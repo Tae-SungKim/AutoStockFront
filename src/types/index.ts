@@ -683,3 +683,29 @@ export interface ApplyParamsResponse {
   success: boolean;
   message: string;
 }
+
+// Async Simulation Types
+export type SimulationStatus = "PENDING" | "RUNNING" | "COMPLETED" | "FAILED" | "CANCELLED";
+
+export interface SimulationTask {
+  taskId: string;
+  status: SimulationStatus;
+  estimatedSeconds: number;
+  checkStatusUrl?: string;
+}
+
+export interface SimulationTaskStatus {
+  taskId: string;
+  status: SimulationStatus;
+  progress: number; // 0-100
+  currentStep: string;
+  elapsedSeconds: number;
+  estimatedSeconds: number;
+  errorMessage?: string;
+}
+
+export interface SimulationResult {
+  status: "COMPLETED" | "FAILED";
+  result?: OptimizeResult;
+  errorMessage?: string;
+}

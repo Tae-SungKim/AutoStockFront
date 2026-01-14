@@ -14,7 +14,10 @@ import {
   ChevronDown,
   ChevronUp,
   Upload,
+  Clock,
 } from "lucide-react";
+import { useSimulationPolling } from "../hooks/useSimulationPolling";
+import { SimulationProgressView } from "./SimulationProgressView";
 
 // 전략명 한글 매핑
 const strategyNameKorean: Record<string, string> = {
@@ -129,6 +132,19 @@ const StrategyOptimizer: React.FC = () => {
     text: string;
   } | null>(null);
   const [expandedSection, setExpandedSection] = useState<string | null>("stats");
+  const [useAsyncMode, setUseAsyncMode] = useState<boolean>(true); // 비동기 모드 토글
+  const [isCancelling, setIsCancelling] = useState<boolean>(false);
+
+  // 비동기 폴링 훅
+  const {
+    status: simulationStatus,
+    result: simulationResult,
+    error: simulationError,
+    isPolling,
+    startPolling,
+    stopPolling,
+    cancelTask,
+  } = useSimulationPolling();
 
   const fetchStats = async () => {
     try {
@@ -162,6 +178,54 @@ const StrategyOptimizer: React.FC = () => {
     }
   };
 
+  // 새로고침 복구: localStorage에서 taskId 확인
+  useEffect(() => {
+    const savedTaskId = localStorage.getItem("sim_task_id");
+    const startTime = localStorage.getItem("sim_start_time");
+
+    if (savedTaskId && startTime) {
+      const elapsed = Math.floor((Date.now() - parseInt(startTime)) / 1000);
+
+      // 24시간 이내의 작업만 복구
+      if (elapsed < 86400) {
+        console.log("Restoring simulation task:", savedTaskId);
+        startPolling(savedTaskId);
+      } else {
+        // 오래된 taskId 제거
+        localStorage.removeItem("sim_task_id");
+        localStorage.removeItem("sim_start_time");
+      }
+    }
+  }, [startPolling]);
+
+  // 시뮬레이션 완료 시 결과 처리
+  useEffect(() => {
+    if (simulationResult?.status === "COMPLETED" && simulationResult.result) {
+      setOptimizeResult(simulationResult.result);
+      if (simulationResult.result.params) {
+        setLastOptimizedParams(simulationResult.result.params);
+      }
+      setMessage({ type: "success", text: "최적화가 완료되었습니다!" });
+      fetchCurrentParams();
+    } else if (simulationError) {
+      setMessage({ type: "error", text: simulationError });
+    }
+  }, [simulationResult, simulationError]);
+
+  // 페이지 이탈 방지
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isPolling) {
+        e.preventDefault();
+        e.returnValue = "작업이 진행 중입니다. 페이지를 나가시겠습니까?";
+        return e.returnValue;
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isPolling]);
+
   useEffect(() => {
     fetchStats();
     fetchCurrentParams();
@@ -170,25 +234,86 @@ const StrategyOptimizer: React.FC = () => {
   const handleOptimizeAll = async () => {
     if (!confirm("전체 최적화를 실행하시겠습니까? 수 분이 소요될 수 있습니다.")) return;
 
-    try {
-      setOptimizing(true);
-      setMessage(null);
-      const result = await strategyOptimizerService.optimizeAndApply();
-      setOptimizeResult(result);
-      if (result.success) {
-        setMessage({ type: "success", text: result.message });
-        if (result.params) {
-          setLastOptimizedParams(result.params);
-        }
-        fetchCurrentParams();
-      } else {
-        setMessage({ type: "error", text: result.message });
+    setMessage(null);
+    setOptimizeResult(null);
+
+    if (useAsyncMode) {
+      // 비동기 모드
+      try {
+        setOptimizing(true);
+        console.log("[Optimizer] Starting async optimization...");
+        const task = await strategyOptimizerService.startAsyncOptimization();
+        console.log("[Optimizer] Task created:", task);
+        startPolling(task.taskId);
+      } catch (error: any) {
+        console.error("[Optimizer] Failed to start optimization:", error);
+        console.error("[Optimizer] Error response:", error.response);
+
+        const errorMessage = error.response?.data?.message
+          || error.response?.data?.error
+          || error.message
+          || "작업 시작에 실패했습니다.";
+
+        const statusCode = error.response?.status;
+        const fullMessage = statusCode
+          ? `[${statusCode}] ${errorMessage}`
+          : errorMessage;
+
+        setMessage({
+          type: "error",
+          text: fullMessage
+        });
+      } finally {
+        setOptimizing(false);
       }
-    } catch (error) {
-      setMessage({ type: "error", text: "최적화 실행에 실패했습니다." });
-    } finally {
-      setOptimizing(false);
+    } else {
+      // 동기 모드 (기존)
+      try {
+        setOptimizing(true);
+        const result = await strategyOptimizerService.optimizeAndApply();
+        setOptimizeResult(result);
+        if (result.success) {
+          setMessage({ type: "success", text: result.message });
+          if (result.params) {
+            setLastOptimizedParams(result.params);
+          }
+          fetchCurrentParams();
+        } else {
+          setMessage({ type: "error", text: result.message });
+        }
+      } catch (error: any) {
+        console.error("[Optimizer] Sync optimization failed:", error);
+        setMessage({
+          type: "error",
+          text: error.response?.data?.message || "최적화 실행에 실패했습니다."
+        });
+      } finally {
+        setOptimizing(false);
+      }
     }
+  };
+
+  const handleCancelSimulation = async () => {
+    if (!confirm("작업을 취소하시겠습니까?")) return;
+
+    try {
+      setIsCancelling(true);
+      await cancelTask();
+      setMessage({ type: "success", text: "작업이 취소되었습니다." });
+    } catch (error) {
+      setMessage({ type: "error", text: "취소 요청에 실패했습니다." });
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
+  const handleResetPolling = () => {
+    if (!confirm("진행 중인 작업 추적을 중지하시겠습니까?")) return;
+
+    stopPolling();
+    localStorage.removeItem("sim_task_id");
+    localStorage.removeItem("sim_start_time");
+    setMessage({ type: "success", text: "작업 추적이 중지되었습니다." });
   };
 
   const handleOptimizeMarket = async () => {
@@ -279,6 +404,37 @@ const StrategyOptimizer: React.FC = () => {
             <AlertCircle size={18} />
           )}
           {message.text}
+        </div>
+      )}
+
+      {/* 시뮬레이션 진행 상태 (비동기 모드) */}
+      {isPolling && simulationStatus && (
+        <SimulationProgressView
+          status={simulationStatus}
+          onCancel={handleCancelSimulation}
+          isCancelling={isCancelling}
+        />
+      )}
+
+      {/* 디버깅: 강제로 폴링 중지 (항상 표시) */}
+      {isPolling && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-yellow-800">
+                디버깅 도구
+              </p>
+              <p className="text-xs text-yellow-600 mt-1">
+                폴링이 멈추지 않을 때 사용하세요
+              </p>
+            </div>
+            <button
+              onClick={handleResetPolling}
+              className="px-3 py-1.5 text-sm bg-yellow-600 text-white rounded hover:bg-yellow-700"
+            >
+              🔧 강제 중지
+            </button>
+          </div>
         </div>
       )}
 
@@ -378,6 +534,35 @@ const StrategyOptimizer: React.FC = () => {
 
         {expandedSection === "optimize" && (
           <div className="p-4 space-y-4">
+            {/* 모드 전환 토글 */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-blue-900 mb-1">
+                    {useAsyncMode ? "비동기 모드 (권장)" : "동기 모드"}
+                  </p>
+                  <p className="text-xs text-blue-700">
+                    {useAsyncMode
+                      ? "백그라운드에서 실행되며 진행 상황을 실시간으로 확인할 수 있습니다."
+                      : "작업이 완료될 때까지 브라우저가 대기합니다."}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setUseAsyncMode(!useAsyncMode)}
+                  disabled={isPolling || optimizing}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                    useAsyncMode ? "bg-blue-600" : "bg-gray-300"
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      useAsyncMode ? "translate-x-6" : "translate-x-1"
+                    }`}
+                  />
+                </button>
+              </div>
+            </div>
+
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
               <p className="text-sm text-yellow-800">
                 <strong>주의:</strong> 최적화는 6,561개의 파라미터 조합을 테스트합니다.
@@ -394,15 +579,15 @@ const StrategyOptimizer: React.FC = () => {
                 </p>
                 <button
                   onClick={handleOptimizeAll}
-                  disabled={optimizing}
+                  disabled={optimizing || isPolling}
                   className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:bg-gray-400"
                 >
-                  {optimizing ? (
+                  {optimizing || isPolling ? (
                     <RefreshCw size={18} className="animate-spin" />
                   ) : (
                     <Play size={18} />
                   )}
-                  {optimizing ? "최적화 중..." : "전체 최적화 실행"}
+                  {optimizing ? "시작 중..." : isPolling ? "실행 중..." : "전체 최적화 실행"}
                 </button>
               </div>
 
