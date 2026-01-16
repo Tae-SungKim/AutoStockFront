@@ -36,6 +36,20 @@ export function Backtest() {
   const [error, setError] = useState<string | null>(null);
   const [unit, setUnit] = useState(1);
 
+  // 날짜 범위 상태 (기본값: 최근 30일)
+  const getDefaultDates = () => {
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - 1);
+
+    return {
+      start: startDate.toISOString().split("T")[0],
+      end: endDate.toISOString().split("T")[0],
+    };
+  };
+
+  const [dateRange, setDateRange] = useState(getDefaultDates());
+
   // 전략 관련 상태
   const [availableStrategies, setAvailableStrategies] = useState<
     AvailableStrategy[]
@@ -58,6 +72,11 @@ export function Backtest() {
       minimumFractionDigits: decimals,
       maximumFractionDigits: decimals,
     }).format(num);
+  };
+
+  // 날짜를 yyyyMMdd 형식으로 변환
+  const formatDateToAPI = (dateString: string): string => {
+    return dateString.replace(/-/g, "");
   };
 
   const fetchMarkets = async () => {
@@ -119,7 +138,9 @@ export function Backtest() {
       const data = await backtest.runDbStrategy(
         selectedStrategy,
         selectedMarket,
-        unit
+        unit,
+        formatDateToAPI(dateRange.start),
+        formatDateToAPI(dateRange.end)
       );
       setSingleResult(data);
     } catch (err) {
@@ -167,13 +188,24 @@ export function Backtest() {
         selectedStrategy,
         unit,
         5, // 청크 사이즈
-        handleProgress
+        handleProgress,
+        formatDateToAPI(dateRange.start),
+        formatDateToAPI(dateRange.end)
       );
 
       setMultiResult(data);
       setProgressState(null); // 완료 후 프로그래스 숨김
-    } catch (err) {
-      setError("멀티마켓 백테스트 실행에 실패했습니다.");
+
+      // 일부 마켓이 실패한 경우 경고 메시지 표시
+      const failedCount = selectedMarkets.length - data.totalMarkets;
+      if (failedCount > 0) {
+        setError(
+          `백테스트 완료: ${data.totalMarkets}개 성공, ${failedCount}개 실패. 성공한 결과를 표시합니다.`
+        );
+      }
+    } catch (err: any) {
+      const errorMsg = err.message || "멀티마켓 백테스트 실행에 실패했습니다.";
+      setError(errorMsg);
       console.error(err);
       setProgressState(null);
     } finally {
@@ -289,8 +321,22 @@ export function Backtest() {
       </div>
 
       {error && (
-        <div className="bg-red-500/10 border border-red-500/50 rounded-lg p-4 mb-4">
-          <p className="text-red-400 text-sm">{error}</p>
+        <div
+          className={
+            error.includes("성공") && error.includes("실패")
+              ? "bg-yellow-500/10 border border-yellow-500/50 rounded-lg p-4 mb-4"
+              : "bg-red-500/10 border border-red-500/50 rounded-lg p-4 mb-4"
+          }
+        >
+          <p
+            className={
+              error.includes("성공") && error.includes("실패")
+                ? "text-yellow-400 text-sm"
+                : "text-red-400 text-sm"
+            }
+          >
+            {error}
+          </p>
         </div>
       )}
 
@@ -343,6 +389,37 @@ export function Backtest() {
             <option value={30}>30분</option>
             <option value={60}>60분</option>
           </select>
+        </div>
+
+        {/* 날짜 범위 선택 */}
+        <div className="mt-4">
+          <label className="text-gray-400 text-xs mb-1 block">
+            백테스트 기간
+          </label>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-gray-500 text-xs mb-1 block">시작일</label>
+              <input
+                type="date"
+                value={dateRange.start}
+                onChange={(e) =>
+                  setDateRange({ ...dateRange, start: e.target.value })
+                }
+                className="w-full bg-gray-600 text-white rounded-lg px-3 py-2 text-sm"
+              />
+            </div>
+            <div>
+              <label className="text-gray-500 text-xs mb-1 block">종료일</label>
+              <input
+                type="date"
+                value={dateRange.end}
+                onChange={(e) =>
+                  setDateRange({ ...dateRange, end: e.target.value })
+                }
+                className="w-full bg-gray-600 text-white rounded-lg px-3 py-2 text-sm"
+              />
+            </div>
+          </div>
         </div>
       </div>
 
@@ -500,12 +577,14 @@ function SingleResultView({
   result: BacktestResult;
   formatNumber: (num: number, decimals?: number) => string;
 }) {
-  const [selectedExitReason, setSelectedExitReason] = useState<ExitReason | null>(null);
+  const [selectedExitReason, setSelectedExitReason] =
+    useState<ExitReason | null>(null);
 
   // exitReason으로 거래 내역 필터링
   const filteredTradeHistory = selectedExitReason
     ? result.tradeHistory.filter(
-        (trade) => trade.type === "SELL" && trade.exitReason === selectedExitReason
+        (trade) =>
+          trade.type === "SELL" && trade.exitReason === selectedExitReason
       )
     : result.tradeHistory;
 
@@ -573,7 +652,8 @@ function SingleResultView({
             거래 내역
             {selectedExitReason && (
               <span className="text-sm text-gray-400 ml-2">
-                ({EXIT_REASON_LABELS[selectedExitReason]} 필터링됨: {filteredTradeHistory.length}건)
+                ({EXIT_REASON_LABELS[selectedExitReason]} 필터링됨:{" "}
+                {filteredTradeHistory.length}건)
               </span>
             )}
           </h3>
@@ -596,15 +676,11 @@ function SingleResultView({
                     key={idx}
                     className={
                       "border-b border-gray-600/50 " +
-                      (trade.type === "BUY"
-                        ? "bg-green-500/5"
-                        : "bg-red-500/5")
+                      (trade.type === "BUY" ? "bg-green-500/5" : "bg-red-500/5")
                     }
                   >
                     <td className="py-2 px-2 text-gray-300">
-                      {trade.timestamp
-                        .replace("T", " ")
-                        .substring(5, 16)}
+                      {trade.timestamp.replace("T", " ").substring(5, 16)}
                     </td>
                     <td className="py-2 px-1 text-center">
                       <span
@@ -671,7 +747,8 @@ function MultiResultView({
   formatNumber: (num: number, decimals?: number) => string;
 }) {
   const [expandedMarket, setExpandedMarket] = useState<string | null>(null);
-  const [selectedExitReason, setSelectedExitReason] = useState<ExitReason | null>(null);
+  const [selectedExitReason, setSelectedExitReason] =
+    useState<ExitReason | null>(null);
 
   return (
     <div className="space-y-4">
@@ -846,7 +923,9 @@ function MultiResultView({
                               <th className="text-right py-2 px-2">금액</th>
                               <th className="text-right py-2 px-2">잔액</th>
                               <th className="text-right py-2 px-2">수익률</th>
-                              <th className="text-center py-2 px-2">종료사유</th>
+                              <th className="text-center py-2 px-2">
+                                종료사유
+                              </th>
                             </tr>
                           </thead>
                           <tbody>
@@ -854,74 +933,80 @@ function MultiResultView({
                               .filter((trade) => {
                                 // 선택된 exitReason이 있으면 필터링
                                 if (!selectedExitReason) return true;
-                                return trade.type === "SELL" && trade.exitReason === selectedExitReason;
+                                return (
+                                  trade.type === "SELL" &&
+                                  trade.exitReason === selectedExitReason
+                                );
                               })
                               .map((trade, idx) => (
-                              <tr
-                                key={idx}
-                                className={
-                                  "border-b border-gray-600/50 " +
-                                  (trade.type === "BUY"
-                                    ? "bg-green-500/5"
-                                    : "bg-red-500/5")
-                                }
-                              >
-                                <td className="py-2 px-2 text-gray-300">
-                                  {trade.timestamp
-                                    .replace("T", " ")
-                                    .substring(5, 16)}
-                                </td>
-                                <td className="py-2 px-1 text-center">
-                                  <span
-                                    className={
-                                      "inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium " +
-                                      (trade.type === "BUY"
-                                        ? "bg-green-500/20 text-green-400"
-                                        : "bg-red-500/20 text-red-400")
-                                    }
-                                  >
-                                    {trade.type === "BUY" ? (
-                                      <TrendingUp className="w-3 h-3" />
-                                    ) : (
-                                      <TrendingDown className="w-3 h-3" />
-                                    )}
-                                    {trade.type === "BUY" ? "매수" : "매도"}
-                                  </span>
-                                </td>
-                                <td className="py-2 px-2 text-right text-white">
-                                  ₩{formatNumber(trade.price)}
-                                </td>
-                                <td className="py-2 px-2 text-right text-gray-300">
-                                  {trade.volume.toFixed(8)}
-                                </td>
-                                <td className="py-2 px-2 text-right text-white">
-                                  ₩{formatNumber(trade.amount)}
-                                </td>
-                                <td className="py-2 px-2 text-right text-gray-300">
-                                  ₩{formatNumber(trade.balance)}
-                                </td>
-                                <td
+                                <tr
+                                  key={idx}
                                   className={
-                                    "py-2 px-2 text-right font-medium " +
-                                    (trade.profitRate >= 0
-                                      ? "text-green-400"
-                                      : "text-red-400")
+                                    "border-b border-gray-600/50 " +
+                                    (trade.type === "BUY"
+                                      ? "bg-green-500/5"
+                                      : "bg-red-500/5")
                                   }
                                 >
-                                  {trade.profitRate >= 0 ? "+" : ""}
-                                  {formatNumber(trade.profitRate, 2)}%
-                                </td>
-                                <td className="py-2 px-2 text-center">
-                                  {trade.type === "SELL" && trade.exitReason ? (
-                                    <span className="text-gray-300 text-xs">
-                                      {EXIT_REASON_LABELS[trade.exitReason]}
+                                  <td className="py-2 px-2 text-gray-300">
+                                    {trade.timestamp
+                                      .replace("T", " ")
+                                      .substring(5, 16)}
+                                  </td>
+                                  <td className="py-2 px-1 text-center">
+                                    <span
+                                      className={
+                                        "inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium " +
+                                        (trade.type === "BUY"
+                                          ? "bg-green-500/20 text-green-400"
+                                          : "bg-red-500/20 text-red-400")
+                                      }
+                                    >
+                                      {trade.type === "BUY" ? (
+                                        <TrendingUp className="w-3 h-3" />
+                                      ) : (
+                                        <TrendingDown className="w-3 h-3" />
+                                      )}
+                                      {trade.type === "BUY" ? "매수" : "매도"}
                                     </span>
-                                  ) : (
-                                    <span className="text-gray-600 text-xs">-</span>
-                                  )}
-                                </td>
-                              </tr>
-                            ))}
+                                  </td>
+                                  <td className="py-2 px-2 text-right text-white">
+                                    ₩{formatNumber(trade.price)}
+                                  </td>
+                                  <td className="py-2 px-2 text-right text-gray-300">
+                                    {trade.volume.toFixed(8)}
+                                  </td>
+                                  <td className="py-2 px-2 text-right text-white">
+                                    ₩{formatNumber(trade.amount)}
+                                  </td>
+                                  <td className="py-2 px-2 text-right text-gray-300">
+                                    ₩{formatNumber(trade.balance)}
+                                  </td>
+                                  <td
+                                    className={
+                                      "py-2 px-2 text-right font-medium " +
+                                      (trade.profitRate >= 0
+                                        ? "text-green-400"
+                                        : "text-red-400")
+                                    }
+                                  >
+                                    {trade.profitRate >= 0 ? "+" : ""}
+                                    {formatNumber(trade.profitRate, 2)}%
+                                  </td>
+                                  <td className="py-2 px-2 text-center">
+                                    {trade.type === "SELL" &&
+                                    trade.exitReason ? (
+                                      <span className="text-gray-300 text-xs">
+                                        {EXIT_REASON_LABELS[trade.exitReason]}
+                                      </span>
+                                    ) : (
+                                      <span className="text-gray-600 text-xs">
+                                        -
+                                      </span>
+                                    )}
+                                  </td>
+                                </tr>
+                              ))}
                           </tbody>
                         </table>
 

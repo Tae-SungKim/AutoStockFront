@@ -239,11 +239,17 @@ export const backtest = {
   runDbStrategy: async (
     strategy: string,
     market: string,
-    unit: number = 1
+    unit: number = 1,
+    startDate?: string,
+    endDate?: string
   ): Promise<BacktestResult> => {
+    const params: any = { market, unit };
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
+
     const response = await backtestApi.get<BacktestResult>(
       `/run/db/${strategy}`,
-      { params: { market, unit } }
+      { params }
     );
     return response.data;
   },
@@ -252,14 +258,20 @@ export const backtest = {
   multiDb: async (
     markets: string[],
     strategy: string,
-    unit: number = 1
+    unit: number = 1,
+    startDate?: string,
+    endDate?: string
   ): Promise<SimulationResult> => {
+    const params: any = {
+      markets: markets.join(","),
+      strategy,
+      unit,
+    };
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
+
     const response = await backtestApi.get<SimulationResult>("/multi/db", {
-      params: {
-        markets: markets.join(","),
-        strategy,
-        unit,
-      },
+      params,
     });
     return response.data;
   },
@@ -270,7 +282,9 @@ export const backtest = {
     strategy: string,
     unit: number = 1,
     chunkSize: number = 5,
-    onProgress?: (current: number, total: number, currentMarket: string, completed: string[]) => void
+    onProgress?: (current: number, total: number, currentMarket: string, completed: string[]) => void,
+    startDate?: string,
+    endDate?: string
   ): Promise<SimulationResult> => {
     const chunks: string[][] = [];
     for (let i = 0; i < markets.length; i += chunkSize) {
@@ -279,6 +293,7 @@ export const backtest = {
 
     let allMarketResults: BacktestResult[] = [];
     let completedMarkets: string[] = [];
+    let failedMarkets: string[] = [];
     let processedCount = 0;
 
     for (const chunk of chunks) {
@@ -287,30 +302,60 @@ export const backtest = {
         onProgress(processedCount, markets.length, chunk[0], completedMarkets);
       }
 
-      // 청크 단위로 백테스트 실행
-      const response = await backtestApi.get<SimulationResult>("/multi/db", {
-        params: {
+      try {
+        // 청크 단위로 백테스트 실행
+        const params: any = {
           markets: chunk.join(","),
           strategy,
           unit,
-        },
-      });
+        };
+        if (startDate) params.startDate = startDate;
+        if (endDate) params.endDate = endDate;
 
-      // 결과 누적
-      allMarketResults = [...allMarketResults, ...response.data.marketResults];
-      completedMarkets = [...completedMarkets, ...chunk];
-      processedCount += chunk.length;
+        const response = await backtestApi.get<SimulationResult>("/multi/db", {
+          params,
+        });
 
-      // 진행 상황 업데이트
-      if (onProgress) {
-        onProgress(processedCount, markets.length, "", completedMarkets);
+        // 결과 누적
+        allMarketResults = [...allMarketResults, ...response.data.marketResults];
+        completedMarkets = [...completedMarkets, ...chunk];
+        processedCount += chunk.length;
+
+        // 진행 상황 업데이트
+        if (onProgress) {
+          onProgress(processedCount, markets.length, "", completedMarkets);
+        }
+      } catch (error: any) {
+        // 에러 발생 시에도 계속 진행
+        console.error(`[MultiBacktest] Chunk failed:`, chunk, error);
+        failedMarkets = [...failedMarkets, ...chunk];
+        processedCount += chunk.length;
+
+        // 실패한 청크도 진행 상황에 반영
+        if (onProgress) {
+          onProgress(processedCount, markets.length, "", completedMarkets);
+        }
       }
     }
 
     // 최종 결과 집계
-    const lastResult = allMarketResults[allMarketResults.length - 1];
-    if (!lastResult) {
-      throw new Error("No backtest results");
+    if (allMarketResults.length === 0) {
+      // 모든 마켓이 실패한 경우
+      throw new Error(
+        `모든 마켓의 백테스트가 실패했습니다. 실패한 마켓: ${failedMarkets.join(", ")}`
+      );
+    }
+
+    // 실패한 마켓이 있는 경우 콘솔에 경고 출력
+    if (failedMarkets.length > 0) {
+      console.warn(
+        `[MultiBacktest] ${failedMarkets.length}개 마켓 실패:`,
+        failedMarkets
+      );
+      console.log(
+        `[MultiBacktest] ${allMarketResults.length}개 마켓 성공:`,
+        completedMarkets
+      );
     }
 
     // 전체 통계 계산
@@ -355,8 +400,8 @@ export const backtest = {
 
     const finalResult: SimulationResult = {
       strategy,
-      totalMarkets: markets.length,
-      initialBalancePerMarket: totalInitialBalance / markets.length,
+      totalMarkets: allMarketResults.length, // 실제 성공한 마켓 수
+      initialBalancePerMarket: totalInitialBalance / allMarketResults.length,
       totalInitialBalance,
       totalFinalAsset,
       totalProfitRate,
