@@ -187,7 +187,7 @@ export function Backtest() {
         selectedMarkets,
         selectedStrategy,
         unit,
-        20, // 청크 사이즈
+        5, // 청크 사이즈
         handleProgress,
         formatDateToAPI(dateRange.start),
         formatDateToAPI(dateRange.end)

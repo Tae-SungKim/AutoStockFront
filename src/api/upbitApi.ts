@@ -281,7 +281,7 @@ export const backtest = {
     markets: string[],
     strategy: string,
     unit: number = 1,
-    chunkSize: number = 20,
+    chunkSize: number = 5,
     onProgress?: (
       current: number,
       total: number,
