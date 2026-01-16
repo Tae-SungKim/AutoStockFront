@@ -281,8 +281,13 @@ export const backtest = {
     markets: string[],
     strategy: string,
     unit: number = 1,
-    chunkSize: number = 5,
-    onProgress?: (current: number, total: number, currentMarket: string, completed: string[]) => void,
+    chunkSize: number = 20,
+    onProgress?: (
+      current: number,
+      total: number,
+      currentMarket: string,
+      completed: string[]
+    ) => void,
     startDate?: string,
     endDate?: string
   ): Promise<SimulationResult> => {
@@ -317,7 +322,10 @@ export const backtest = {
         });
 
         // 결과 누적
-        allMarketResults = [...allMarketResults, ...response.data.marketResults];
+        allMarketResults = [
+          ...allMarketResults,
+          ...response.data.marketResults,
+        ];
         completedMarkets = [...completedMarkets, ...chunk];
         processedCount += chunk.length;
 
@@ -342,7 +350,9 @@ export const backtest = {
     if (allMarketResults.length === 0) {
       // 모든 마켓이 실패한 경우
       throw new Error(
-        `모든 마켓의 백테스트가 실패했습니다. 실패한 마켓: ${failedMarkets.join(", ")}`
+        `모든 마켓의 백테스트가 실패했습니다. 실패한 마켓: ${failedMarkets.join(
+          ", "
+        )}`
       );
     }
 
@@ -367,7 +377,8 @@ export const backtest = {
       (sum, r) => sum + r.finalTotalAsset,
       0
     );
-    const totalProfitRate = ((totalFinalAsset - totalInitialBalance) / totalInitialBalance) * 100;
+    const totalProfitRate =
+      ((totalFinalAsset - totalInitialBalance) / totalInitialBalance) * 100;
     const averageProfitRate =
       allMarketResults.reduce((sum, r) => sum + r.totalProfitRate, 0) /
       allMarketResults.length;
@@ -393,7 +404,8 @@ export const backtest = {
     allMarketResults.forEach((result) => {
       if (result.exitReasonStats) {
         Object.entries(result.exitReasonStats).forEach(([reason, count]) => {
-          totalExitReasonStats[reason] = (totalExitReasonStats[reason] || 0) + count;
+          totalExitReasonStats[reason] =
+            (totalExitReasonStats[reason] || 0) + count;
         });
       }
     });
@@ -417,9 +429,10 @@ export const backtest = {
       profitRateByMarket: Object.fromEntries(
         allMarketResults.map((r) => [r.market, r.totalProfitRate])
       ),
-      totalExitReasonStats: Object.keys(totalExitReasonStats).length > 0
-        ? totalExitReasonStats
-        : undefined,
+      totalExitReasonStats:
+        Object.keys(totalExitReasonStats).length > 0
+          ? totalExitReasonStats
+          : undefined,
     };
 
     return finalResult;
@@ -797,7 +810,9 @@ export const strategyOptimizerService = {
     return response.data;
   },
   optimize: async (): Promise<OptimizeResult> => {
-    const response = await strategyOptimizerApi.post<OptimizeResult>("/optimize");
+    const response = await strategyOptimizerApi.post<OptimizeResult>(
+      "/optimize"
+    );
     return response.data;
   },
   optimizeMarket: async (market: string): Promise<OptimizeResult> => {
@@ -824,7 +839,9 @@ export const strategyOptimizerService = {
     );
     return response.data;
   },
-  applyParams: async (params: OptimizedParams): Promise<ApplyParamsResponse> => {
+  applyParams: async (
+    params: OptimizedParams
+  ): Promise<ApplyParamsResponse> => {
     const response = await strategyOptimizerApi.post<ApplyParamsResponse>(
       "/apply-params",
       params
@@ -854,10 +871,13 @@ export const strategyOptimizerService = {
     return response.data;
   },
 
-  cancelTask: async (taskId: string): Promise<{ success: boolean; message: string }> => {
-    const response = await strategyOptimizerApi.post<{ success: boolean; message: string }>(
-      `/tasks/${taskId}/cancel`
-    );
+  cancelTask: async (
+    taskId: string
+  ): Promise<{ success: boolean; message: string }> => {
+    const response = await strategyOptimizerApi.post<{
+      success: boolean;
+      message: string;
+    }>(`/tasks/${taskId}/cancel`);
     return response.data;
   },
 };
