@@ -12,7 +12,7 @@ import {
   ChevronUp,
   AlertTriangle,
 } from "lucide-react";
-import { backtest, strategyService, alters } from "../api/upbitApi";
+import { backtest, strategyService, alters, upbitApi } from "../api/upbitApi";
 import type {
   BacktestResult,
   SimulationResult,
@@ -81,7 +81,11 @@ export function Backtest() {
 
   const fetchMarkets = async () => {
     try {
-      const markets = await backtest.getMarkets();
+      //const markets = await backtest.getMarkets();
+      const markets = (await upbitApi.getMarkets())
+        .filter((m) => m.market.startsWith("KRW-"))
+        .filter((m) => ["BTC", "ETH"].indexOf(m.market) === -1) // BTC, ETH 마켓 제외
+        .map((market) => market.market);
       setAvailableMarkets(markets);
       if (markets.length > 0 && !selectedMarket) {
         setSelectedMarket(markets[0]);

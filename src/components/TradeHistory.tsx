@@ -141,6 +141,14 @@ export function TradeHistory() {
       (sum, r) => sum + (r.totalFee ?? 0),
       0
     );
+    const totalBuyAmount = matched.reduce(
+      (sum, r) => sum + (r.buyAmount ?? 0),
+      0
+    );
+    const totalSellAmount = matched.reduce(
+      (sum, r) => sum + (r.sellAmount ?? 0),
+      0
+    );
     const winRate =
       matched.length > 0
         ? ((wins.length / matched.length) * 100).toFixed(2) + "%"
@@ -154,6 +162,8 @@ export function TradeHistory() {
       totalFee,
       totalNetProfit,
       winRate,
+      totalBuyAmount,
+      totalSellAmount,
     } as TradeProfitSummary;
   }, [summary, filteredRecords, startDate, endDate]);
 
@@ -208,6 +218,9 @@ export function TradeHistory() {
     const loseCount = displaySummary.loseCount ?? 0;
     const totalFee = displaySummary.totalFee ?? 0;
     const totalNetProfit = displaySummary.totalNetProfit ?? 0;
+    const totalBuyAmount = displaySummary.totalBuyAmount ?? 0;
+    const totalSellAmount = displaySummary.totalSellAmount ?? 0;
+    const grossProfit = totalSellAmount - totalBuyAmount; // 총손익 (수수료 제외 전)
 
     // winRate는 "100.00%" 형식의 문자열이므로 파싱
     let winRateNum = 0;
@@ -220,7 +233,7 @@ export function TradeHistory() {
 
     return (
       <div className="space-y-6">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           <div className="bg-gray-700/50 rounded-lg p-4">
             <p className="text-gray-400 text-sm mb-1">총 거래</p>
             <p className="text-xl font-bold text-white">
@@ -247,6 +260,40 @@ export function TradeHistory() {
           </div>
 
           <div className="bg-gray-700/50 rounded-lg p-4">
+            <p className="text-gray-400 text-sm mb-1">총 매수금액</p>
+            <p className="text-xl font-bold text-red-400">
+              ₩{formatNumber(totalBuyAmount)}
+            </p>
+          </div>
+
+          <div className="bg-gray-700/50 rounded-lg p-4">
+            <p className="text-gray-400 text-sm mb-1">총 매도금액</p>
+            <p className="text-xl font-bold text-blue-400">
+              ₩{formatNumber(totalSellAmount)}
+            </p>
+          </div>
+
+          <div className="bg-gray-700/50 rounded-lg p-4">
+            <p className="text-gray-400 text-sm mb-1">총손익</p>
+            <div className="flex items-center gap-1">
+              {grossProfit >= 0 ? (
+                <TrendingUp className="w-4 h-4 text-green-400" />
+              ) : (
+                <TrendingDown className="w-4 h-4 text-red-400" />
+              )}
+              <p
+                className={
+                  "text-xl font-bold " +
+                  (grossProfit >= 0 ? "text-green-400" : "text-red-400")
+                }
+              >
+                ₩{formatNumber(grossProfit)}
+              </p>
+            </div>
+            <p className="text-xs text-gray-500 mt-1">수수료 제외 전</p>
+          </div>
+
+          <div className="bg-gray-700/50 rounded-lg p-4">
             <p className="text-gray-400 text-sm mb-1">순이익</p>
             <div className="flex items-center gap-1">
               {totalNetProfit >= 0 ? (
@@ -263,12 +310,8 @@ export function TradeHistory() {
                 ₩{formatNumber(totalNetProfit)}
               </p>
             </div>
-          </div>
-
-          <div className="bg-gray-700/50 rounded-lg p-4">
-            <p className="text-gray-400 text-sm mb-1">총 수수료</p>
-            <p className="text-xl font-bold text-white">
-              ₩{formatNumber(totalFee)}
+            <p className="text-xs text-gray-500 mt-1">
+              수수료: -₩{formatNumber(totalFee)}
             </p>
           </div>
         </div>

@@ -242,6 +242,8 @@ export interface TradeProfitSummary {
   matchedTrades: number;
   totalNetProfit: number;
   holdingTrades: number;
+  totalBuyAmount?: number;
+  totalSellAmount?: number;
 }
 
 // Auth Types
