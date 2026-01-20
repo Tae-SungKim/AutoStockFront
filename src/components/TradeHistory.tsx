@@ -221,6 +221,8 @@ export function TradeHistory() {
     const totalBuyAmount = displaySummary.totalBuyAmount ?? 0;
     const totalSellAmount = displaySummary.totalSellAmount ?? 0;
     const grossProfit = totalSellAmount - totalBuyAmount; // 총손익 (수수료 제외 전)
+    const grossProfitRate = totalBuyAmount > 0 ? (grossProfit / totalBuyAmount) * 100 : 0; // 총손익률
+    const netProfitRate = totalBuyAmount > 0 ? (totalNetProfit / totalBuyAmount) * 100 : 0; // 순수익률
 
     // winRate는 "100.00%" 형식의 문자열이므로 파싱
     let winRateNum = 0;
@@ -289,6 +291,14 @@ export function TradeHistory() {
               >
                 ₩{formatNumber(grossProfit)}
               </p>
+              <span
+                className={
+                  "text-sm font-medium " +
+                  (grossProfitRate >= 0 ? "text-green-400" : "text-red-400")
+                }
+              >
+                ({grossProfitRate >= 0 ? "+" : ""}{formatNumber(grossProfitRate, 2)}%)
+              </span>
             </div>
             <p className="text-xs text-gray-500 mt-1">수수료 제외 전</p>
           </div>
@@ -309,6 +319,14 @@ export function TradeHistory() {
               >
                 ₩{formatNumber(totalNetProfit)}
               </p>
+              <span
+                className={
+                  "text-sm font-medium " +
+                  (netProfitRate >= 0 ? "text-green-400" : "text-red-400")
+                }
+              >
+                ({netProfitRate >= 0 ? "+" : ""}{formatNumber(netProfitRate, 2)}%)
+              </span>
             </div>
             <p className="text-xs text-gray-500 mt-1">
               수수료: -₩{formatNumber(totalFee)}
@@ -482,13 +500,21 @@ export function TradeHistory() {
 
     return (
       <div className="space-y-2">
-        {sortedRecords.map((record) => (
+        {sortedRecords.map((record) => {
+          const isLoss = record.status === "MATCHED" && (record.netProfit ?? 0) < 0;
+          return (
           <div
             key={record.buyOrderUuid}
-            className="bg-gray-700/50 rounded-lg overflow-hidden"
+            className={
+              "rounded-lg overflow-hidden " +
+              (isLoss ? "bg-red-900/30 border border-red-500/30" : "bg-gray-700/50")
+            }
           >
             <div
-              className="p-4 cursor-pointer hover:bg-gray-700/70 transition-colors"
+              className={
+                "p-4 cursor-pointer transition-colors " +
+                (isLoss ? "hover:bg-red-900/40" : "hover:bg-gray-700/70")
+              }
               onClick={() =>
                 setExpandedRecord(
                   expandedRecord === record.buyOrderUuid
@@ -572,7 +598,7 @@ export function TradeHistory() {
                       </>
                     )}
 
-                    {/* 매도 완료시: 매입금액 -> 매도금액 -> 수수료 -> 순이익(수익률) */}
+                    {/* 매도 완료시: 매입금액 -> 매도금액 -> 매수단가 -> (목표가) -> 매도단가 -> 수수료 -> 순이익(수익률) */}
                     {record.status === "MATCHED" && (
                       <div className="flex items-center gap-3">
                         <div className="text-right">
@@ -587,6 +613,30 @@ export function TradeHistory() {
                             ₩{formatNumber(record.sellAmount ?? 0)}
                           </p>
                           <p className="text-xs text-gray-500">매도</p>
+                        </div>
+                        <div className="text-right border-l border-gray-600 pl-3">
+                          <p className="text-red-400 font-medium">
+                            ₩{formatNumber(record.buyPrice)}
+                          </p>
+                          <p className="text-xs text-gray-500">매수단가</p>
+                        </div>
+                        {record.targetPrice !== null && (
+                          <>
+                            <ArrowRight className="w-3 h-3 text-gray-500" />
+                            <div className="text-right">
+                              <p className="text-purple-400 font-medium">
+                                ₩{formatNumber(record.targetPrice)}
+                              </p>
+                              <p className="text-xs text-gray-500">목표가</p>
+                            </div>
+                          </>
+                        )}
+                        <ArrowRight className="w-3 h-3 text-gray-500" />
+                        <div className="text-right">
+                          <p className="text-blue-400 font-medium">
+                            ₩{formatNumber(record.sellPrice ?? 0)}
+                          </p>
+                          <p className="text-xs text-gray-500">매도단가</p>
                         </div>
                         <div className="text-right border-l border-gray-600 pl-3">
                           <p className="text-yellow-400 text-sm">
@@ -865,7 +915,8 @@ export function TradeHistory() {
               </div>
             )}
           </div>
-        ))}
+        );
+        })}
       </div>
     );
   };
