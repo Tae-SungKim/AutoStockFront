@@ -178,6 +178,61 @@ const StrategyParams: React.FC = () => {
     return editedParams[key] !== undefined;
   };
 
+  // 파라미터를 카테고리별로 그룹화
+  const groupedParams = params.reduce((acc, param) => {
+    const prefix = param.key.split('.')[0];
+    const categoryMap: Record<string, string> = {
+      'bollinger': '볼린저 밴드',
+      'rsi': 'RSI',
+      'volume': '거래량',
+      'stopLoss': '손절',
+      'takeProfit': '익절',
+      'trailingStop': '트레일링 스탑',
+      'minHold': '최소 보유',
+      'slippage': '슬리피지/수수료',
+      'fee': '슬리피지/수수료',
+      'total': '슬리피지/수수료',
+      'minProfit': '슬리피지/수수료',
+      'orderbook': '호가창 검증',
+      'fastBreakout': 'Fast Breakout',
+      'highVolume': '급등 차단',
+      'chasePrevention': '추격 매수 방지',
+      'bandWidth': '밴드폭/ATR 필터',
+      'atr': '밴드폭/ATR 필터',
+      'maxStopLoss': '손절',
+    };
+    const category = categoryMap[prefix] || '기타';
+    if (!acc[category]) {
+      acc[category] = [];
+    }
+    acc[category].push(param);
+    return acc;
+  }, {} as Record<string, StrategyParamDetail[]>);
+
+  // 카테고리 순서 정의
+  const categoryOrder = [
+    '볼린저 밴드',
+    'RSI',
+    '거래량',
+    '손절',
+    '익절',
+    '트레일링 스탑',
+    '최소 보유',
+    '밴드폭/ATR 필터',
+    '슬리피지/수수료',
+    '호가창 검증',
+    'Fast Breakout',
+    '급등 차단',
+    '추격 매수 방지',
+    '기타',
+  ];
+
+  const sortedCategories = Object.keys(groupedParams).sort((a, b) => {
+    const indexA = categoryOrder.indexOf(a);
+    const indexB = categoryOrder.indexOf(b);
+    return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
+  });
+
   return (
     <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
       <div className="flex justify-between items-center">
@@ -309,94 +364,103 @@ const StrategyParams: React.FC = () => {
                   설정 가능한 파라미터가 없습니다.
                 </div>
               ) : (
-                <div className="space-y-4">
-                  {params.map((param) => (
-                    <div
-                      key={param.key}
-                      className={`p-4 rounded-lg border ${
-                        param.isCustom
-                          ? "bg-purple-50 border-purple-200"
-                          : "bg-gray-50 border-gray-200"
-                      }`}
-                    >
-                      <div className="flex justify-between items-start mb-2">
-                        <div>
-                          <label className="font-medium text-gray-800">
-                            {param.name}
-                          </label>
-                          <p className="text-xs text-gray-500 mt-0.5">
-                            {param.description}
-                          </p>
-                        </div>
-                        {param.isCustom && (
-                          <span className="text-xs bg-purple-200 text-purple-700 px-2 py-0.5 rounded">
-                            커스텀
-                          </span>
-                        )}
+                <div className="space-y-6">
+                  {sortedCategories.map((category) => (
+                    <div key={category} className="border border-gray-200 rounded-lg overflow-hidden">
+                      <div className="bg-gray-100 px-4 py-2 border-b border-gray-200">
+                        <h3 className="font-semibold text-gray-700">{category}</h3>
                       </div>
-
-                      <div className="flex items-center gap-3 mt-3">
-                        {param.type === "BOOLEAN" ? (
-                          <select
-                            value={getParamValue(param)}
-                            onChange={(e) =>
-                              handleParamChange(param.key, e.target.value)
-                            }
-                            className="flex-1 p-2 border rounded bg-white"
+                      <div className="p-4 space-y-3">
+                        {groupedParams[category].map((param) => (
+                          <div
+                            key={param.key}
+                            className={`p-3 rounded-lg border ${
+                              param.isCustom
+                                ? "bg-purple-50 border-purple-200"
+                                : "bg-gray-50 border-gray-200"
+                            }`}
                           >
-                            <option value="true">true</option>
-                            <option value="false">false</option>
-                          </select>
-                        ) : (
-                          <input
-                            type={
-                              param.type === "INTEGER" || param.type === "DOUBLE"
-                                ? "number"
-                                : "text"
-                            }
-                            step={param.type === "DOUBLE" ? "0.1" : "1"}
-                            min={param.minValue}
-                            max={param.maxValue}
-                            value={getParamValue(param)}
-                            onChange={(e) =>
-                              handleParamChange(param.key, e.target.value)
-                            }
-                            className="flex-1 p-2 border rounded"
-                          />
-                        )}
+                            <div className="flex justify-between items-start mb-2">
+                              <div>
+                                <label className="font-medium text-gray-800 text-sm">
+                                  {param.name}
+                                </label>
+                                <p className="text-xs text-gray-500 mt-0.5">
+                                  {param.description}
+                                </p>
+                              </div>
+                              {param.isCustom && (
+                                <span className="text-xs bg-purple-200 text-purple-700 px-2 py-0.5 rounded">
+                                  커스텀
+                                </span>
+                              )}
+                            </div>
 
-                        <div className="flex items-center gap-1">
-                          {isParamEdited(param.key) && (
-                            <button
-                              onClick={() => handleSaveParam(param.key)}
-                              disabled={saving}
-                              className="p-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400"
-                              title="저장"
-                            >
-                              <Save size={16} />
-                            </button>
-                          )}
-                          {param.isCustom && (
-                            <button
-                              onClick={() => handleResetParam(param.key)}
-                              disabled={saving}
-                              className="p-2 text-gray-500 hover:text-red-500 hover:bg-red-50 rounded"
-                              title="기본값으로 복원"
-                            >
-                              <RotateCcw size={16} />
-                            </button>
-                          )}
-                        </div>
-                      </div>
+                            <div className="flex items-center gap-3 mt-2">
+                              {param.type === "BOOLEAN" ? (
+                                <select
+                                  value={getParamValue(param)}
+                                  onChange={(e) =>
+                                    handleParamChange(param.key, e.target.value)
+                                  }
+                                  className="flex-1 p-2 border rounded bg-white text-sm"
+                                >
+                                  <option value="true">true</option>
+                                  <option value="false">false</option>
+                                </select>
+                              ) : (
+                                <input
+                                  type={
+                                    param.type === "INTEGER" || param.type === "DOUBLE"
+                                      ? "number"
+                                      : "text"
+                                  }
+                                  step={param.type === "DOUBLE" ? "0.0001" : "1"}
+                                  min={param.minValue}
+                                  max={param.maxValue}
+                                  value={getParamValue(param)}
+                                  onChange={(e) =>
+                                    handleParamChange(param.key, e.target.value)
+                                  }
+                                  className="flex-1 p-2 border rounded text-sm"
+                                />
+                              )}
 
-                      <div className="flex justify-between text-xs text-gray-400 mt-2">
-                        <span>기본값: {param.defaultValue}</span>
-                        {param.minValue !== undefined &&
-                          param.maxValue !== undefined && (
-                            <span>
-                              범위: {param.minValue} ~ {param.maxValue}
-                            </span>
-                          )}
+                              <div className="flex items-center gap-1">
+                                {isParamEdited(param.key) && (
+                                  <button
+                                    onClick={() => handleSaveParam(param.key)}
+                                    disabled={saving}
+                                    className="p-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400"
+                                    title="저장"
+                                  >
+                                    <Save size={16} />
+                                  </button>
+                                )}
+                                {param.isCustom && (
+                                  <button
+                                    onClick={() => handleResetParam(param.key)}
+                                    disabled={saving}
+                                    className="p-2 text-gray-500 hover:text-red-500 hover:bg-red-50 rounded"
+                                    title="기본값으로 복원"
+                                  >
+                                    <RotateCcw size={16} />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="flex justify-between text-xs text-gray-400 mt-2">
+                              <span>기본값: {param.defaultValue}</span>
+                              {param.minValue !== undefined &&
+                                param.maxValue !== undefined && (
+                                  <span>
+                                    범위: {param.minValue} ~ {param.maxValue}
+                                  </span>
+                                )}
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   ))}
