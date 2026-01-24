@@ -184,7 +184,7 @@ export function TradeHistory() {
     }
   }, [startDate, endDate]);
 
-  const formatNumber = (num: number | null, decimals: number = 0) => {
+  const formatNumber = (num: number | null, decimals: number = 2) => {
     if (num === null) return "-";
     return new Intl.NumberFormat("ko-KR", {
       minimumFractionDigits: decimals,
@@ -221,8 +221,10 @@ export function TradeHistory() {
     const totalBuyAmount = displaySummary.totalBuyAmount ?? 0;
     const totalSellAmount = displaySummary.totalSellAmount ?? 0;
     const grossProfit = totalSellAmount - totalBuyAmount; // 총손익 (수수료 제외 전)
-    const grossProfitRate = totalBuyAmount > 0 ? (grossProfit / totalBuyAmount) * 100 : 0; // 총손익률
-    const netProfitRate = totalBuyAmount > 0 ? (totalNetProfit / totalBuyAmount) * 100 : 0; // 순수익률
+    const grossProfitRate =
+      totalBuyAmount > 0 ? (grossProfit / totalBuyAmount) * 100 : 0; // 총손익률
+    const netProfitRate =
+      totalBuyAmount > 0 ? (totalNetProfit / totalBuyAmount) * 100 : 0; // 순수익률
 
     // winRate는 "100.00%" 형식의 문자열이므로 파싱
     let winRateNum = 0;
@@ -297,7 +299,8 @@ export function TradeHistory() {
                   (grossProfitRate >= 0 ? "text-green-400" : "text-red-400")
                 }
               >
-                ({grossProfitRate >= 0 ? "+" : ""}{formatNumber(grossProfitRate, 2)}%)
+                ({grossProfitRate >= 0 ? "+" : ""}
+                {formatNumber(grossProfitRate, 2)}%)
               </span>
             </div>
             <p className="text-xs text-gray-500 mt-1">수수료 제외 전</p>
@@ -325,7 +328,8 @@ export function TradeHistory() {
                   (netProfitRate >= 0 ? "text-green-400" : "text-red-400")
                 }
               >
-                ({netProfitRate >= 0 ? "+" : ""}{formatNumber(netProfitRate, 2)}%)
+                ({netProfitRate >= 0 ? "+" : ""}
+                {formatNumber(netProfitRate, 2)}%)
               </span>
             </div>
             <p className="text-xs text-gray-500 mt-1">
@@ -501,421 +505,428 @@ export function TradeHistory() {
     return (
       <div className="space-y-2">
         {sortedRecords.map((record) => {
-          const isLoss = record.status === "MATCHED" && (record.netProfit ?? 0) < 0;
+          const isLoss =
+            record.status === "MATCHED" && (record.netProfit ?? 0) < 0;
           return (
-          <div
-            key={record.buyOrderUuid}
-            className={
-              "rounded-lg overflow-hidden " +
-              (isLoss ? "bg-red-900/30 border border-red-500/30" : "bg-gray-700/50")
-            }
-          >
             <div
+              key={record.buyOrderUuid}
               className={
-                "p-4 cursor-pointer transition-colors " +
-                (isLoss ? "hover:bg-red-900/40" : "hover:bg-gray-700/70")
-              }
-              onClick={() =>
-                setExpandedRecord(
-                  expandedRecord === record.buyOrderUuid
-                    ? null
-                    : record.buyOrderUuid
-                )
+                "rounded-lg overflow-hidden " +
+                (isLoss
+                  ? "bg-red-900/30 border border-red-500/30"
+                  : "bg-gray-700/50")
               }
             >
-              {/* 메인 라인: 마켓명, 상태, 매수->매도 요�� */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <p className="font-medium text-white">{record.market}</p>
-                      <span
-                        className={
-                          "px-2 py-0.5 rounded text-xs font-medium " +
-                          (record.status === "HOLDING"
-                            ? "bg-yellow-500/20 text-yellow-400"
-                            : "bg-blue-500/20 text-blue-400")
-                        }
-                      >
-                        {record.status === "HOLDING" ? "보유중" : "매도완료"}
-                      </span>
+              <div
+                className={
+                  "p-4 cursor-pointer transition-colors " +
+                  (isLoss ? "hover:bg-red-900/40" : "hover:bg-gray-700/70")
+                }
+                onClick={() =>
+                  setExpandedRecord(
+                    expandedRecord === record.buyOrderUuid
+                      ? null
+                      : record.buyOrderUuid
+                  )
+                }
+              >
+                {/* 메인 라인: 마켓명, 상태, 매수->매도 요�� */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-white">
+                          {record.market}
+                        </p>
+                        <span
+                          className={
+                            "px-2 py-0.5 rounded text-xs font-medium " +
+                            (record.status === "HOLDING"
+                              ? "bg-yellow-500/20 text-yellow-400"
+                              : "bg-blue-500/20 text-blue-400")
+                          }
+                        >
+                          {record.status === "HOLDING" ? "보유중" : "매도완료"}
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-400 mt-1">
+                        {formatShortDateTime(record.buyDate, record.buyTime)}
+                      </p>
                     </div>
-                    <p className="text-xs text-gray-400 mt-1">
-                      {formatShortDateTime(record.buyDate, record.buyTime)}
-                    </p>
                   </div>
-                </div>
 
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2 text-sm">
-                    {/* 보유중일 때: 매수가 -> 목표가 -> 현재가 */}
-                    {record.status === "HOLDING" && (
-                      <>
-                        <div className="text-right">
-                          <p className="text-white font-medium">
-                            ₩{formatNumber(record.buyPrice)}
-                          </p>
-                          <p className="text-xs text-gray-500">매수가</p>
-                        </div>
-                        {record.targetPrice !== null && (
-                          <>
-                            <ArrowRight className="w-4 h-4 text-gray-500" />
-                            <div className="text-right">
-                              <p className="text-purple-400 font-medium">
-                                ₩{formatNumber(record.targetPrice)}
-                              </p>
-                              <p className="text-xs text-gray-500">목표가</p>
-                            </div>
-                          </>
-                        )}
-                        <ArrowRight className="w-4 h-4 text-gray-500" />
-                        <div className="text-right">
-                          {currentPrices[record.market] ? (
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 text-sm">
+                      {/* 보유중일 때: 매수가 -> 목표가 -> 현재가 */}
+                      {record.status === "HOLDING" && (
+                        <>
+                          <div className="text-right">
+                            <p className="text-white font-medium">
+                              ₩{formatNumber(record.buyPrice)}
+                            </p>
+                            <p className="text-xs text-gray-500">매수가</p>
+                          </div>
+                          {record.targetPrice !== null && (
                             <>
-                              <p
-                                className={
-                                  "font-medium " +
-                                  (currentPrices[record.market] >
-                                  record.buyPrice
-                                    ? "text-red-400"
-                                    : currentPrices[record.market] <
-                                      record.buyPrice
-                                    ? "text-blue-400"
-                                    : "text-white")
-                                }
-                              >
-                                ₩{formatNumber(currentPrices[record.market])}
-                              </p>
-                              <p className="text-xs text-gray-500">현재가</p>
-                            </>
-                          ) : (
-                            <>
-                              <Clock className="w-4 h-4 text-yellow-400 inline" />
-                              <p className="text-xs text-gray-500">로딩중</p>
+                              <ArrowRight className="w-4 h-4 text-gray-500" />
+                              <div className="text-right">
+                                <p className="text-purple-400 font-medium">
+                                  ₩{formatNumber(record.targetPrice)}
+                                </p>
+                                <p className="text-xs text-gray-500">목표가</p>
+                              </div>
                             </>
                           )}
-                        </div>
-                      </>
-                    )}
+                          <ArrowRight className="w-4 h-4 text-gray-500" />
+                          <div className="text-right">
+                            {currentPrices[record.market] ? (
+                              <>
+                                <p
+                                  className={
+                                    "font-medium " +
+                                    (currentPrices[record.market] >
+                                    record.buyPrice
+                                      ? "text-red-400"
+                                      : currentPrices[record.market] <
+                                        record.buyPrice
+                                      ? "text-blue-400"
+                                      : "text-white")
+                                  }
+                                >
+                                  ₩{formatNumber(currentPrices[record.market])}
+                                </p>
+                                <p className="text-xs text-gray-500">현재가</p>
+                              </>
+                            ) : (
+                              <>
+                                <Clock className="w-4 h-4 text-yellow-400 inline" />
+                                <p className="text-xs text-gray-500">로딩중</p>
+                              </>
+                            )}
+                          </div>
+                        </>
+                      )}
 
-                    {/* 매도 완료시: 매입금액 -> 매도금액 -> 매수단가 -> (목표가) -> 매도단가 -> 수수료 -> 순이익(수익률) */}
-                    {record.status === "MATCHED" && (
-                      <div className="flex items-center gap-3">
-                        <div className="text-right">
-                          <p className="text-red-400 font-medium">
-                            ₩{formatNumber(record.buyAmount ?? 0)}
-                          </p>
-                          <p className="text-xs text-gray-500">매입</p>
+                      {/* 매도 완료시: 매입금액 -> 매도금액 -> 매수단가 -> (목표가) -> 매도단가 -> 수수료 -> 순이익(수익률) */}
+                      {record.status === "MATCHED" && (
+                        <div className="flex items-center gap-3">
+                          <div className="text-right">
+                            <p className="text-red-400 font-medium">
+                              ₩{formatNumber(record.buyAmount ?? 0)}
+                            </p>
+                            <p className="text-xs text-gray-500">매입</p>
+                          </div>
+                          <ArrowRight className="w-3 h-3 text-gray-500" />
+                          <div className="text-right">
+                            <p className="text-blue-400 font-medium">
+                              ₩{formatNumber(record.sellAmount ?? 0)}
+                            </p>
+                            <p className="text-xs text-gray-500">매도</p>
+                          </div>
+                          <div className="text-right border-l border-gray-600 pl-3">
+                            <p className="text-red-400 font-medium">
+                              ₩{formatNumber(record.buyPrice)}
+                            </p>
+                            <p className="text-xs text-gray-500">매수단가</p>
+                          </div>
+                          {record.targetPrice !== null && (
+                            <>
+                              <ArrowRight className="w-3 h-3 text-gray-500" />
+                              <div className="text-right">
+                                <p className="text-purple-400 font-medium">
+                                  ₩{formatNumber(record.targetPrice)}
+                                </p>
+                                <p className="text-xs text-gray-500">목표가</p>
+                              </div>
+                            </>
+                          )}
+                          <ArrowRight className="w-3 h-3 text-gray-500" />
+                          <div className="text-right">
+                            <p className="text-blue-400 font-medium">
+                              ₩{formatNumber(record.sellPrice ?? 0)}
+                            </p>
+                            <p className="text-xs text-gray-500">매도단가</p>
+                          </div>
+                          <div className="text-right border-l border-gray-600 pl-3">
+                            <p className="text-yellow-400 text-sm">
+                              -₩{formatNumber(record.totalFee ?? 0)}
+                            </p>
+                            <p className="text-xs text-gray-500">수수료</p>
+                          </div>
+                          <div className="text-right border-l border-gray-600 pl-3 min-w-[90px]">
+                            <p
+                              className={
+                                "font-bold " +
+                                ((record.netProfit ?? 0) > 0
+                                  ? "text-red-400"
+                                  : (record.netProfit ?? 0) < 0
+                                  ? "text-blue-400"
+                                  : "text-white")
+                              }
+                            >
+                              {(record.netProfit ?? 0) > 0 ? "+" : ""}₩
+                              {formatNumber(record.netProfit ?? 0)}
+                            </p>
+                            <p
+                              className={
+                                "text-xs font-medium " +
+                                ((record.profitRate ?? 0) > 0
+                                  ? "text-red-400"
+                                  : (record.profitRate ?? 0) < 0
+                                  ? "text-blue-400"
+                                  : "text-gray-500")
+                              }
+                            >
+                              {(record.profitRate ?? 0) > 0 ? "+" : ""}
+                              {formatNumber(record.profitRate ?? 0, 2)}%
+                            </p>
+                          </div>
                         </div>
-                        <ArrowRight className="w-3 h-3 text-gray-500" />
-                        <div className="text-right">
-                          <p className="text-blue-400 font-medium">
-                            ₩{formatNumber(record.sellAmount ?? 0)}
-                          </p>
-                          <p className="text-xs text-gray-500">매도</p>
-                        </div>
-                        <div className="text-right border-l border-gray-600 pl-3">
-                          <p className="text-red-400 font-medium">
-                            ₩{formatNumber(record.buyPrice)}
-                          </p>
-                          <p className="text-xs text-gray-500">매수단가</p>
-                        </div>
-                        {record.targetPrice !== null && (
-                          <>
-                            <ArrowRight className="w-3 h-3 text-gray-500" />
-                            <div className="text-right">
-                              <p className="text-purple-400 font-medium">
-                                ₩{formatNumber(record.targetPrice)}
-                              </p>
-                              <p className="text-xs text-gray-500">목표가</p>
-                            </div>
-                          </>
-                        )}
-                        <ArrowRight className="w-3 h-3 text-gray-500" />
-                        <div className="text-right">
-                          <p className="text-blue-400 font-medium">
-                            ₩{formatNumber(record.sellPrice ?? 0)}
-                          </p>
-                          <p className="text-xs text-gray-500">매도단가</p>
-                        </div>
-                        <div className="text-right border-l border-gray-600 pl-3">
-                          <p className="text-yellow-400 text-sm">
-                            -₩{formatNumber(record.totalFee ?? 0)}
-                          </p>
-                          <p className="text-xs text-gray-500">수수료</p>
-                        </div>
-                        <div className="text-right border-l border-gray-600 pl-3 min-w-[90px]">
-                          <p
-                            className={
-                              "font-bold " +
-                              ((record.netProfit ?? 0) > 0
-                                ? "text-red-400"
-                                : (record.netProfit ?? 0) < 0
-                                ? "text-blue-400"
-                                : "text-white")
-                            }
-                          >
-                            {(record.netProfit ?? 0) > 0 ? "+" : ""}₩
-                            {formatNumber(record.netProfit ?? 0)}
-                          </p>
-                          <p
-                            className={
-                              "text-xs font-medium " +
-                              ((record.profitRate ?? 0) > 0
-                                ? "text-red-400"
-                                : (record.profitRate ?? 0) < 0
-                                ? "text-blue-400"
-                                : "text-gray-500")
-                            }
-                          >
-                            {(record.profitRate ?? 0) > 0 ? "+" : ""}
-                            {formatNumber(record.profitRate ?? 0, 2)}%
-                          </p>
-                        </div>
-                      </div>
+                      )}
+                    </div>
+
+                    {expandedRecord === record.buyOrderUuid ? (
+                      <ChevronUp className="w-4 h-4 text-gray-400" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4 text-gray-400" />
                     )}
                   </div>
-
-                  {expandedRecord === record.buyOrderUuid ? (
-                    <ChevronUp className="w-4 h-4 text-gray-400" />
-                  ) : (
-                    <ChevronDown className="w-4 h-4 text-gray-400" />
-                  )}
                 </div>
               </div>
-            </div>
 
-            {/* 확장된 상세 정보 */}
-            {expandedRecord === record.buyOrderUuid && (
-              <div className="px-4 pb-4 border-t border-gray-600 pt-3 space-y-4">
-                {/* 매수 상세 */}
-                <div className="bg-green-500/10 rounded-lg p-3">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="px-2 py-0.5 rounded text-xs font-medium bg-green-500/20 text-green-400">
-                      매수
-                    </span>
-                    <span className="text-xs text-gray-400">
-                      {formatDateTime(record.buyDate, record.buyTime)}
-                    </span>
-                    <span className="text-xs text-blue-400">
-                      {record.buyStrategy}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                    <div>
-                      <p className="text-gray-400">체결가</p>
-                      <p className="text-white">
-                        ₩{formatNumber(record.buyPrice)}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-gray-400">수량</p>
-                      <p className="text-white">
-                        {formatNumber(record.buyVolume, 8)}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-gray-400">거래금액</p>
-                      <p className="text-white">
-                        ₩{formatNumber(record.buyAmount)}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-gray-400">수수료</p>
-                      <p className="text-white">
-                        ₩{formatNumber(record.buyFee)}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 목표가 및 현재 시세 (보유중일 때) */}
-                {record.status === "HOLDING" && (
-                  <div className="bg-purple-500/10 rounded-lg p-3">
+              {/* 확장된 상세 정보 */}
+              {expandedRecord === record.buyOrderUuid && (
+                <div className="px-4 pb-4 border-t border-gray-600 pt-3 space-y-4">
+                  {/* 매수 상세 */}
+                  <div className="bg-green-500/10 rounded-lg p-3">
                     <div className="flex items-center gap-2 mb-2">
-                      <Target className="w-4 h-4 text-purple-400" />
-                      <span className="text-xs font-medium text-purple-400">
-                        목표가 / 현재 시세
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                      <div>
-                        <p className="text-gray-400">목표가</p>
-                        <p className="text-purple-400 font-medium">
-                          ₩{formatNumber(record.targetPrice)}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-gray-400">현재가</p>
-                        {currentPrices[record.market] ? (
-                          <p
-                            className={
-                              "font-medium " +
-                              (currentPrices[record.market] > record.buyPrice
-                                ? "text-red-400"
-                                : currentPrices[record.market] < record.buyPrice
-                                ? "text-blue-400"
-                                : "text-white")
-                            }
-                          >
-                            ₩{formatNumber(currentPrices[record.market])}
-                          </p>
-                        ) : (
-                          <p className="text-gray-500">로딩중...</p>
-                        )}
-                      </div>
-                      <div>
-                        <p className="text-gray-400">현재 수익률</p>
-                        {currentPrices[record.market] ? (
-                          <p
-                            className={
-                              "font-medium " +
-                              (currentPrices[record.market] > record.buyPrice
-                                ? "text-red-400"
-                                : currentPrices[record.market] < record.buyPrice
-                                ? "text-blue-400"
-                                : "text-white")
-                            }
-                          >
-                            {currentPrices[record.market] > record.buyPrice
-                              ? "+"
-                              : currentPrices[record.market] < record.buyPrice
-                              ? ""
-                              : ""}
-                            {formatNumber(
-                              ((currentPrices[record.market] -
-                                record.buyPrice) /
-                                record.buyPrice) *
-                                100,
-                              2
-                            )}
-                            %
-                          </p>
-                        ) : (
-                          <p className="text-gray-500">-</p>
-                        )}
-                      </div>
-                      <div>
-                        <p className="text-gray-400">목표 도달률</p>
-                        {currentPrices[record.market] &&
-                        record.targetPrice !== null ? (
-                          <p className="text-purple-400 font-medium">
-                            {formatNumber(
-                              ((currentPrices[record.market] -
-                                record.buyPrice) /
-                                (record.targetPrice - record.buyPrice)) *
-                                100,
-                              1
-                            )}
-                            %
-                          </p>
-                        ) : (
-                          <p className="text-gray-500">-</p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* 매도 상세 */}
-                {record.sellPrice !== null &&
-                record.sellDate !== null &&
-                record.sellTime !== null ? (
-                  <div className="bg-red-500/10 rounded-lg p-3">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="px-2 py-0.5 rounded text-xs font-medium bg-red-500/20 text-red-400">
-                        매도
+                      <span className="px-2 py-0.5 rounded text-xs font-medium bg-green-500/20 text-green-400">
+                        매수
                       </span>
                       <span className="text-xs text-gray-400">
-                        {formatDateTime(record.sellDate, record.sellTime)}
+                        {formatDateTime(record.buyDate, record.buyTime)}
                       </span>
-                      {record.sellStrategy && (
-                        <span className="text-xs text-blue-400">
-                          {record.sellStrategy}
-                        </span>
-                      )}
+                      <span className="text-xs text-blue-400">
+                        {record.buyStrategy}
+                      </span>
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                       <div>
                         <p className="text-gray-400">체결가</p>
                         <p className="text-white">
-                          ₩{formatNumber(record.sellPrice)}
+                          ₩{formatNumber(record.buyPrice)}
                         </p>
                       </div>
                       <div>
                         <p className="text-gray-400">수량</p>
                         <p className="text-white">
-                          {formatNumber(record.sellVolume, 8)}
+                          {formatNumber(record.buyVolume, 8)}
                         </p>
                       </div>
                       <div>
                         <p className="text-gray-400">거래금액</p>
                         <p className="text-white">
-                          ₩{formatNumber(record.sellAmount)}
+                          ₩{formatNumber(record.buyAmount)}
                         </p>
                       </div>
                       <div>
                         <p className="text-gray-400">수수료</p>
                         <p className="text-white">
-                          ₩{formatNumber(record.sellFee)}
+                          ₩{formatNumber(record.buyFee)}
                         </p>
                       </div>
                     </div>
                   </div>
-                ) : (
-                  record.status !== "HOLDING" && (
-                    <div className="bg-yellow-500/10 rounded-lg p-3 text-center">
-                      <Clock className="w-5 h-5 text-yellow-400 inline mr-2" />
-                      <span className="text-yellow-400">
-                        매도 대기중 (보유 {record.holdingDays}일)
-                      </span>
-                    </div>
-                  )
-                )}
 
-                {/* 총 손익 요약 */}
-                {record.status === "MATCHED" && record.netProfit !== null && (
-                  <div className="bg-gray-600/30 rounded-lg p-3">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <span className="text-gray-400">총 손익</span>
-                        <p className="text-xs text-gray-500">
-                          총 수수료: ₩{formatNumber(record.totalFee)}
-                        </p>
+                  {/* 목표가 및 현재 시세 (보유중일 때) */}
+                  {record.status === "HOLDING" && (
+                    <div className="bg-purple-500/10 rounded-lg p-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Target className="w-4 h-4 text-purple-400" />
+                        <span className="text-xs font-medium text-purple-400">
+                          목표가 / 현재 시세
+                        </span>
                       </div>
-                      <div className="text-right">
-                        <p
-                          className={
-                            "font-bold text-lg " +
-                            (record.netProfit >= 0
-                              ? "text-green-400"
-                              : "text-red-400")
-                          }
-                        >
-                          {record.netProfit >= 0 ? "+" : ""}₩
-                          {formatNumber(record.netProfit)}
-                        </p>
-                        {record.profitRate !== null && (
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div>
+                          <p className="text-gray-400">목표가</p>
+                          <p className="text-purple-400 font-medium">
+                            ₩{formatNumber(record.targetPrice)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-gray-400">현재가</p>
+                          {currentPrices[record.market] ? (
+                            <p
+                              className={
+                                "font-medium " +
+                                (currentPrices[record.market] > record.buyPrice
+                                  ? "text-red-400"
+                                  : currentPrices[record.market] <
+                                    record.buyPrice
+                                  ? "text-blue-400"
+                                  : "text-white")
+                              }
+                            >
+                              ₩{formatNumber(currentPrices[record.market])}
+                            </p>
+                          ) : (
+                            <p className="text-gray-500">로딩중...</p>
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-gray-400">현재 수익률</p>
+                          {currentPrices[record.market] ? (
+                            <p
+                              className={
+                                "font-medium " +
+                                (currentPrices[record.market] > record.buyPrice
+                                  ? "text-red-400"
+                                  : currentPrices[record.market] <
+                                    record.buyPrice
+                                  ? "text-blue-400"
+                                  : "text-white")
+                              }
+                            >
+                              {currentPrices[record.market] > record.buyPrice
+                                ? "+"
+                                : currentPrices[record.market] < record.buyPrice
+                                ? ""
+                                : ""}
+                              {formatNumber(
+                                ((currentPrices[record.market] -
+                                  record.buyPrice) /
+                                  record.buyPrice) *
+                                  100,
+                                2
+                              )}
+                              %
+                            </p>
+                          ) : (
+                            <p className="text-gray-500">-</p>
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-gray-400">목표 도달률</p>
+                          {currentPrices[record.market] &&
+                          record.targetPrice !== null ? (
+                            <p className="text-purple-400 font-medium">
+                              {formatNumber(
+                                ((currentPrices[record.market] -
+                                  record.buyPrice) /
+                                  (record.targetPrice - record.buyPrice)) *
+                                  100,
+                                1
+                              )}
+                              %
+                            </p>
+                          ) : (
+                            <p className="text-gray-500">-</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 매도 상세 */}
+                  {record.sellPrice !== null &&
+                  record.sellDate !== null &&
+                  record.sellTime !== null ? (
+                    <div className="bg-red-500/10 rounded-lg p-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="px-2 py-0.5 rounded text-xs font-medium bg-red-500/20 text-red-400">
+                          매도
+                        </span>
+                        <span className="text-xs text-gray-400">
+                          {formatDateTime(record.sellDate, record.sellTime)}
+                        </span>
+                        {record.sellStrategy && (
+                          <span className="text-xs text-blue-400">
+                            {record.sellStrategy}
+                          </span>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div>
+                          <p className="text-gray-400">체결가</p>
+                          <p className="text-white">
+                            ₩{formatNumber(record.sellPrice)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-gray-400">수량</p>
+                          <p className="text-white">
+                            {formatNumber(record.sellVolume, 8)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-gray-400">거래금액</p>
+                          <p className="text-white">
+                            ₩{formatNumber(record.sellAmount)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-gray-400">수수료</p>
+                          <p className="text-white">
+                            ₩{formatNumber(record.sellFee)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    record.status !== "HOLDING" && (
+                      <div className="bg-yellow-500/10 rounded-lg p-3 text-center">
+                        <Clock className="w-5 h-5 text-yellow-400 inline mr-2" />
+                        <span className="text-yellow-400">
+                          매도 대기중 (보유 {record.holdingDays}일)
+                        </span>
+                      </div>
+                    )
+                  )}
+
+                  {/* 총 손익 요약 */}
+                  {record.status === "MATCHED" && record.netProfit !== null && (
+                    <div className="bg-gray-600/30 rounded-lg p-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="text-gray-400">총 손익</span>
+                          <p className="text-xs text-gray-500">
+                            총 수수료: ₩{formatNumber(record.totalFee)}
+                          </p>
+                        </div>
+                        <div className="text-right">
                           <p
                             className={
-                              "text-sm " +
-                              (record.profitRate >= 0
+                              "font-bold text-lg " +
+                              (record.netProfit >= 0
                                 ? "text-green-400"
                                 : "text-red-400")
                             }
                           >
-                            {record.profitRate >= 0 ? "+" : ""}
-                            {formatNumber(record.profitRate, 2)}%
+                            {record.netProfit >= 0 ? "+" : ""}₩
+                            {formatNumber(record.netProfit)}
                           </p>
-                        )}
+                          {record.profitRate !== null && (
+                            <p
+                              className={
+                                "text-sm " +
+                                (record.profitRate >= 0
+                                  ? "text-green-400"
+                                  : "text-red-400")
+                              }
+                            >
+                              {record.profitRate >= 0 ? "+" : ""}
+                              {formatNumber(record.profitRate, 2)}%
+                            </p>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        );
+                  )}
+                </div>
+              )}
+            </div>
+          );
         })}
       </div>
     );
