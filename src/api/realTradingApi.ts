@@ -247,6 +247,118 @@ const optimizerApiInstance = axios.create({
 });
 setupAuthInterceptor(optimizerApiInstance);
 
+// Impulse Replay API Types
+export interface ReplaySignal {
+  market: string;
+  timestamp: string;
+  zScore: number;
+  normalizedVolume: number;
+  candleDensity: number;
+  priceChange: number;
+  isValid: boolean;
+  reason?: string;
+}
+
+export interface ReplayResult {
+  market: string;
+  signals: ReplaySignal[];
+  totalSignals: number;
+  validSignals: number;
+  invalidSignals: number;
+  summary: {
+    avgZScore: number;
+    avgVolume: number;
+    avgDensity: number;
+    successRate: number;
+  };
+}
+
+export interface ReplayAnalysis {
+  market: string;
+  period: string;
+  analysis: {
+    strongSignals: number;
+    weakSignals: number;
+    fakeSignals: number;
+    avgHoldingTime: number;
+    profitableRate: number;
+    avgProfit: number;
+    avgLoss: number;
+    bestTimeSlots: number[];
+    worstTimeSlots: number[];
+  };
+  recommendations: string[];
+}
+
+export interface SurgeMarket {
+  market: string;
+  koreanName?: string;
+  currentPrice: number;
+  priceChange: number;
+  priceChangeRate: number;
+  volume: number;
+  volumeChange: number;
+  zScore: number;
+  normalizedVolume: number;
+  candleDensity: number;
+  detectedAt: string;
+  signalStrength: "STRONG" | "MEDIUM" | "WEAK";
+  isValid: boolean;
+  reason?: string;
+}
+
+export interface LiveSurgeData {
+  surgeMarkets: SurgeMarket[];
+  lastUpdated: string;
+  totalScanned: number;
+  surgeCount: number;
+}
+
+// Impulse Replay API
+const impulseReplayApiInstance = axios.create({
+  baseURL: "/api/impulse/replay",
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
+setupAuthInterceptor(impulseReplayApiInstance);
+
+export const impulseReplayApi = {
+  // 단일 마켓 리플레이 실행
+  runReplay: async (market: string, count: number = 200): Promise<ReplayResult> => {
+    const response = await impulseReplayApiInstance.get<ReplayResult>("/run", {
+      params: { market, count },
+    });
+    return response.data;
+  },
+
+  // 단일 마켓 리플레이 분석
+  getAnalysis: async (market: string, count: number = 200): Promise<ReplayAnalysis> => {
+    const response = await impulseReplayApiInstance.get<ReplayAnalysis>("/analysis", {
+      params: { market, count },
+    });
+    return response.data;
+  },
+
+  // 전체 KRW 마켓 리플레이
+  runAllMarkets: async (): Promise<ReplayResult[]> => {
+    const response = await impulseReplayApiInstance.get<ReplayResult[]>("/run/all");
+    return response.data;
+  },
+
+  // 급등 감지 마켓 스캔
+  scanSurgeMarkets: async (): Promise<SurgeMarket[]> => {
+    const response = await impulseReplayApiInstance.get<SurgeMarket[]>("/scan");
+    return response.data;
+  },
+
+  // 실시간 급등 마켓 조회
+  getLiveSurgeMarkets: async (): Promise<LiveSurgeData> => {
+    const response = await impulseReplayApiInstance.get<LiveSurgeData>("/live");
+    return response.data;
+  },
+};
+
 export const optimizerApi = {
   // 시간대별 성과 조회
   getTimeSlotPerformance: async (

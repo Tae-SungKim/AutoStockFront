@@ -181,19 +181,21 @@ export const useExitAllPositions = () => {
 // 통합 훅: 엔진 상태 + 포지션
 export const useRealTrading = () => {
   const engineStatus = useEngineStatus();
-  const positions = usePositions();
+  const positionsHook = usePositions();
   const startEngineHook = useStartEngine();
   const stopEngineHook = useStopEngine();
   const exitPositionHook = useExitPosition();
   const exitAllHook = useExitAllPositions();
 
-  const totalProfit = (positions.positions || []).reduce(
-    (sum, p) => sum + p.netProfit,
+  // 배열 보장
+  const positionsList = Array.isArray(positionsHook.positions) ? positionsHook.positions : [];
+
+  const totalProfit = positionsList.reduce(
+    (sum, p) => sum + (p.netProfit || 0),
     0
   );
-  const avgProfitRate = positions.positions.length
-    ? positions.positions.reduce((sum, p) => sum + p.profitRate, 0) /
-      positions.positions.length
+  const avgProfitRate = positionsList.length > 0
+    ? positionsList.reduce((sum, p) => sum + (p.profitRate || 0), 0) / positionsList.length
     : 0;
 
   return {
@@ -201,14 +203,14 @@ export const useRealTrading = () => {
     engineStatus: engineStatus.status,
     engineLoading: engineStatus.loading,
     engineError: engineStatus.error,
-    positions: positions.positions,
-    positionsLoading: positions.loading,
-    positionsError: positions.error,
+    positions: positionsList,
+    positionsLoading: positionsHook.loading,
+    positionsError: positionsHook.error,
 
     // 통계
     totalProfit,
     avgProfitRate,
-    positionCount: positions.positions.length,
+    positionCount: positionsList.length,
 
     // 액션
     startEngine: startEngineHook.startEngine,
@@ -222,6 +224,6 @@ export const useRealTrading = () => {
 
     // 새로고침
     refetchStatus: engineStatus.refetch,
-    refetchPositions: positions.refetch,
+    refetchPositions: positionsHook.refetch,
   };
 };
