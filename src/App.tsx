@@ -16,6 +16,7 @@ import Alerts from "./components/Alerts";
 import Rebalance from "./components/Rebalance";
 import StrategyParams from "./components/StrategyParams";
 import StrategyOptimizer from "./components/StrategyOptimizer";
+import { RealTradingDashboard } from "./components/realtrading";
 import {
   LayoutDashboard,
   LineChart,
@@ -23,17 +24,18 @@ import {
   Scale,
   Settings,
   Zap,
+  Activity,
 } from "lucide-react";
 
 type AuthPage = "login" | "register";
-type TabType = "trading" | "dashboard" | "alerts" | "rebalance" | "strategy-params" | "optimizer";
+type TabType = "realtrading" | "trading" | "dashboard" | "alerts" | "rebalance" | "strategy-params" | "optimizer";
 
 function MainApp() {
   const { isAuthenticated, isLoading } = useAuth();
   const [selectedMarket, setSelectedMarket] = useState("KRW-BTC");
   const [authPage, setAuthPage] = useState<AuthPage>("login");
   const [showSettings, setShowSettings] = useState(false);
-  const [activeTab, setActiveTab] = useState<TabType>("trading");
+  const [activeTab, setActiveTab] = useState<TabType>("realtrading");
 
   if (isLoading) {
     return (
@@ -54,6 +56,7 @@ function MainApp() {
   }
 
   const tabs = [
+    { id: "realtrading" as TabType, label: "실거래", icon: Activity },
     { id: "trading" as TabType, label: "트레이딩", icon: LineChart },
     { id: "dashboard" as TabType, label: "대시보드", icon: LayoutDashboard },
     { id: "alerts" as TabType, label: "급등/급락", icon: AlertTriangle },
@@ -68,6 +71,8 @@ function MainApp() {
     }
 
     switch (activeTab) {
+      case "realtrading":
+        return <RealTradingDashboard />;
       case "dashboard":
         return <Dashboard />;
       case "alerts":
