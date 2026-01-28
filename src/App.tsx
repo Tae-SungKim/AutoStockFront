@@ -18,6 +18,7 @@ import Rebalance from "./components/Rebalance";
 import StrategyParams from "./components/StrategyParams";
 import StrategyOptimizer from "./components/StrategyOptimizer";
 import { RealTradingDashboard } from "./components/realtrading";
+import { ReplayContainer } from "./components/replay";
 import {
   LayoutDashboard,
   LineChart,
@@ -26,10 +27,11 @@ import {
   Settings,
   Zap,
   Activity,
+  BarChart3,
 } from "lucide-react";
 
 type AuthPage = "login" | "register";
-type TabType = "realtrading" | "trading" | "dashboard" | "alerts" | "rebalance" | "strategy-params" | "optimizer";
+type TabType = "realtrading" | "trading" | "dashboard" | "alerts" | "rebalance" | "strategy-params" | "optimizer" | "replay";
 
 function MainApp() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -64,6 +66,7 @@ function MainApp() {
     { id: "rebalance" as TabType, label: "리밸런싱", icon: Scale },
     { id: "strategy-params" as TabType, label: "전략 설정", icon: Settings },
     { id: "optimizer" as TabType, label: "최적화", icon: Zap },
+    { id: "replay" as TabType, label: "리플레이", icon: BarChart3 },
   ];
 
   const renderTabContent = () => {
@@ -84,6 +87,12 @@ function MainApp() {
         return <StrategyParams />;
       case "optimizer":
         return <StrategyOptimizer />;
+      case "replay":
+        return (
+          <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-6">
+            <ReplayContainer />
+          </div>
+        );
       case "trading":
       default:
         return (
