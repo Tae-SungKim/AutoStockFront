@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { ThemeProvider } from "./contexts/ThemeContext";
 import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
 import { Header } from "./components/Header";
@@ -39,10 +40,10 @@ function MainApp() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-surface flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-400">로딩 중...</p>
+          <p className="text-content-secondary">로딩 중...</p>
         </div>
       </div>
     );
@@ -62,7 +63,7 @@ function MainApp() {
     { id: "alerts" as TabType, label: "급등/급락", icon: AlertTriangle },
     { id: "rebalance" as TabType, label: "리밸런싱", icon: Scale },
     { id: "strategy-params" as TabType, label: "전략 설정", icon: Settings },
-    { id: "optimizer" as TabType, label: "전략 최적화", icon: Zap },
+    { id: "optimizer" as TabType, label: "최적화", icon: Zap },
   ];
 
   const renderTabContent = () => {
@@ -86,10 +87,10 @@ function MainApp() {
       case "trading":
       default:
         return (
-          <div className="grid grid-cols-12 gap-6">
+          <div className="grid grid-cols-12 gap-4 sm:gap-6">
             {/* 왼쪽 사이드바 - 마켓 목록 */}
             <div className="col-span-12 lg:col-span-3 xl:col-span-2">
-              <div className="h-[calc(100vh-200px)] sticky top-6">
+              <div className="lg:h-[calc(100vh-200px)] lg:sticky lg:top-6">
                 <MarketList
                   selectedMarket={selectedMarket}
                   onSelectMarket={setSelectedMarket}
@@ -99,7 +100,7 @@ function MainApp() {
 
             {/* 메인 콘텐츠 영역 */}
             <div className="col-span-12 lg:col-span-9 xl:col-span-10">
-              <div className="grid grid-cols-12 gap-6">
+              <div className="grid grid-cols-12 gap-4 sm:gap-6">
                 {/* 차트 */}
                 <div className="col-span-12 xl:col-span-8">
                   <PriceChart market={selectedMarket} />
@@ -137,28 +138,28 @@ function MainApp() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900">
+    <div className="min-h-screen bg-surface">
       <Header onSettingsClick={() => setShowSettings(!showSettings)} />
 
-      {/* Tab Navigation */}
+      {/* Tab Navigation - Mobile Responsive */}
       {!showSettings && (
-        <div className="bg-gray-800 border-b border-gray-700">
-          <div className="container mx-auto px-4">
-            <div className="flex gap-1 overflow-x-auto py-2">
+        <div className="bg-surface-secondary border-b border-line">
+          <div className="container mx-auto px-2 sm:px-4">
+            <div className="flex gap-1 overflow-x-auto py-2 scrollbar-hide">
               {tabs.map((tab) => {
                 const Icon = tab.icon;
                 return (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                    className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium whitespace-nowrap transition-colors ${
                       activeTab === tab.id
                         ? "bg-purple-600 text-white"
-                        : "text-gray-400 hover:text-white hover:bg-gray-700"
+                        : "text-content-secondary hover:text-content hover:bg-surface-hover"
                     }`}
                   >
-                    <Icon size={16} />
-                    {tab.label}
+                    <Icon className="w-4 h-4" />
+                    <span className="hidden xs:inline sm:inline">{tab.label}</span>
                   </button>
                 );
               })}
@@ -167,7 +168,7 @@ function MainApp() {
         </div>
       )}
 
-      <main className={activeTab === "trading" ? "container mx-auto px-4 py-6" : ""}>
+      <main className={activeTab === "trading" ? "container mx-auto px-2 sm:px-4 py-4 sm:py-6" : ""}>
         {renderTabContent()}
       </main>
     </div>
@@ -176,9 +177,11 @@ function MainApp() {
 
 function App() {
   return (
-    <AuthProvider>
-      <MainApp />
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <MainApp />
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 

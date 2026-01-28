@@ -1,1 +1,82 @@
 @import "tailwindcss";
+
+/* CSS Custom Properties for Theming */
+:root {
+  /* Light Theme (default for :root, but app defaults to dark) */
+  --color-bg-primary: 255 255 255;
+  --color-bg-secondary: 249 250 251;
+  --color-bg-tertiary: 243 244 246;
+  --color-bg-card: 255 255 255;
+  --color-bg-hover: 243 244 246;
+
+  --color-border: 229 231 235;
+  --color-border-light: 243 244 246;
+
+  --color-text-primary: 17 24 39;
+  --color-text-secondary: 107 114 128;
+  --color-text-muted: 156 163 175;
+}
+
+.dark {
+  --color-bg-primary: 17 24 39;
+  --color-bg-secondary: 31 41 55;
+  --color-bg-tertiary: 55 65 81;
+  --color-bg-card: 31 41 55;
+  --color-bg-hover: 55 65 81;
+
+  --color-border: 55 65 81;
+  --color-border-light: 75 85 99;
+
+  --color-text-primary: 255 255 255;
+  --color-text-secondary: 156 163 175;
+  --color-text-muted: 107 114 128;
+}
+
+.light {
+  --color-bg-primary: 255 255 255;
+  --color-bg-secondary: 249 250 251;
+  --color-bg-tertiary: 243 244 246;
+  --color-bg-card: 255 255 255;
+  --color-bg-hover: 243 244 246;
+
+  --color-border: 229 231 235;
+  --color-border-light: 243 244 246;
+
+  --color-text-primary: 17 24 39;
+  --color-text-secondary: 107 114 128;
+  --color-text-muted: 156 163 175;
+}
+
+/* Tailwind CSS theme extension */
+@theme {
+  --color-surface: rgb(var(--color-bg-primary));
+  --color-surface-secondary: rgb(var(--color-bg-secondary));
+  --color-surface-tertiary: rgb(var(--color-bg-tertiary));
+  --color-surface-card: rgb(var(--color-bg-card));
+  --color-surface-hover: rgb(var(--color-bg-hover));
+
+  --color-line: rgb(var(--color-border));
+  --color-line-light: rgb(var(--color-border-light));
+
+  --color-content: rgb(var(--color-text-primary));
+  --color-content-secondary: rgb(var(--color-text-secondary));
+  --color-content-muted: rgb(var(--color-text-muted));
+}
+
+/* Scrollbar hide utility */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Mobile card utility for responsive tables */
+.table-card {
+  background-color: rgb(var(--color-bg-card));
+  border-radius: 0.5rem;
+  padding: 1rem;
+  border: 1px solid rgb(var(--color-border));
+}

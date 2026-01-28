@@ -54,7 +54,7 @@ export const RealTradingDashboard: React.FC = () => {
     };
 
     fetchData();
-    const interval = setInterval(fetchData, 30000); // 30초마다 갱신
+    const interval = setInterval(fetchData, 30000);
     return () => clearInterval(interval);
   }, []);
 
@@ -101,73 +101,65 @@ export const RealTradingDashboard: React.FC = () => {
     setActiveView("replay");
   };
 
+  const viewTabs = [
+    { id: "positions" as ViewTab, label: "포지션", shortLabel: "POS", icon: null, color: "purple" },
+    { id: "surge" as ViewTab, label: "급등 감지", shortLabel: "급등", icon: Zap, color: "yellow" },
+    { id: "replay" as ViewTab, label: "리플레이", shortLabel: "RPL", icon: Play, color: "blue" },
+    { id: "all-replay" as ViewTab, label: "전체 리플레이", shortLabel: "ALL", icon: Activity, color: "indigo" },
+  ];
+
+  const getButtonClass = (tabId: ViewTab, color: string) => {
+    const isActive = activeView === tabId;
+    const colorMap: Record<string, string> = {
+      purple: "bg-purple-600",
+      yellow: "bg-yellow-600",
+      blue: "bg-blue-600",
+      indigo: "bg-indigo-600",
+    };
+    return isActive
+      ? `${colorMap[color]} text-white`
+      : "text-content-secondary hover:text-content hover:bg-surface-hover";
+  };
+
   return (
-    <div className="p-6 space-y-6 bg-gray-900 min-h-screen">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6 bg-surface min-h-screen">
       {/* 헤더 */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold text-white">실시간 트레이딩</h1>
-        <div className="flex items-center gap-2">
-          {/* 뷰 탭 */}
-          <div className="flex gap-1 bg-gray-800 rounded-lg p-1">
-            <button
-              onClick={() => setActiveView("positions")}
-              className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                activeView === "positions"
-                  ? "bg-purple-600 text-white"
-                  : "text-gray-400 hover:text-white"
-              }`}
-            >
-              포지션
-            </button>
-            <button
-              onClick={() => setActiveView("surge")}
-              className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                activeView === "surge"
-                  ? "bg-yellow-600 text-white"
-                  : "text-gray-400 hover:text-white"
-              }`}
-            >
-              <Zap className="w-4 h-4" />
-              급등 감지
-            </button>
-            <button
-              onClick={() => setActiveView("replay")}
-              className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                activeView === "replay"
-                  ? "bg-blue-600 text-white"
-                  : "text-gray-400 hover:text-white"
-              }`}
-            >
-              <Play className="w-4 h-4" />
-              리플레이
-            </button>
-            <button
-              onClick={() => setActiveView("all-replay")}
-              className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                activeView === "all-replay"
-                  ? "bg-indigo-600 text-white"
-                  : "text-gray-400 hover:text-white"
-              }`}
-            >
-              <Activity className="w-4 h-4" />
-              전체 리플레이
-            </button>
-          </div>
+      <div className="flex flex-col gap-3 sm:gap-4">
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl sm:text-2xl font-bold text-content">실시간 트레이딩</h1>
           <button
             onClick={handleRefresh}
-            className="flex items-center gap-2 px-4 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-colors"
+            className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 bg-surface-tertiary text-content-secondary rounded-lg hover:bg-surface-hover transition-colors"
           >
             <RefreshCw className="w-4 h-4" />
-            새로고침
+            <span className="hidden sm:inline">새로고침</span>
           </button>
+        </div>
+
+        {/* 뷰 탭 - Mobile Optimized */}
+        <div className="flex gap-1 bg-surface-secondary rounded-lg p-1 overflow-x-auto scrollbar-hide">
+          {viewTabs.map((tab) => {
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveView(tab.id)}
+                className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-lg transition-colors whitespace-nowrap ${getButtonClass(tab.id, tab.color)}`}
+              >
+                {Icon && <Icon className="w-3 h-3 sm:w-4 sm:h-4" />}
+                <span className="sm:hidden">{tab.shortLabel}</span>
+                <span className="hidden sm:inline">{tab.label}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
       {/* 에러 표시 */}
       {positionsError && (
-        <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 flex items-center gap-3">
-          <AlertCircle className="w-5 h-5 text-red-400" />
-          <p className="text-red-400">
+        <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 sm:p-4 flex items-center gap-2 sm:gap-3">
+          <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-red-400 flex-shrink-0" />
+          <p className="text-red-400 text-sm">
             포지션 조회 오류: {positionsError.message}
           </p>
         </div>
@@ -185,9 +177,9 @@ export const RealTradingDashboard: React.FC = () => {
 
       {/* 메인 컨텐츠 - 포지션 뷰 */}
       {activeView === "positions" && (
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6">
           {/* 포지션 그리드 */}
-          <div className="lg:col-span-3">
+          <div className="lg:col-span-3 order-2 lg:order-1">
             <PositionGrid
               positions={positionsList}
               loading={positionsLoading}
@@ -199,8 +191,8 @@ export const RealTradingDashboard: React.FC = () => {
             />
           </div>
 
-          {/* 사이드바 통계 */}
-          <div className="space-y-6">
+          {/* 사이드바 통계 - Mobile First */}
+          <div className="space-y-4 sm:space-y-6 order-1 lg:order-2">
             <QuickStats
               totalProfit={totalProfit}
               avgProfitRate={avgProfitRate}
