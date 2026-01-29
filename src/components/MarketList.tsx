@@ -90,27 +90,27 @@ export function MarketList({
   };
 
   return (
-    <div className="bg-gray-800 rounded-xl p-6 h-full flex flex-col">
-      <h2 className="text-lg font-semibold text-white mb-4">마켓 목록</h2>
+    <div className="bg-surface-secondary rounded-xl p-4 sm:p-6 flex flex-col max-h-[50vh] sm:max-h-none sm:h-full">
+      <h2 className="text-base sm:text-lg font-semibold text-content mb-3 sm:mb-4">마켓 목록</h2>
 
-      <div className="relative mb-4">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+      <div className="relative mb-3 sm:mb-4">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-content-secondary" />
         <input
           type="text"
           placeholder="코인 검색..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full bg-gray-700 text-white pl-10 pr-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full bg-surface-tertiary text-content pl-10 pr-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
         />
       </div>
 
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-auto min-h-0">
         {loading && markets.length === 0 ? (
           <div className="space-y-2">
-            {[...Array(10)].map((_, i) => (
+            {[...Array(5)].map((_, i) => (
               <div
                 key={i}
-                className="animate-pulse bg-gray-700 h-16 rounded-lg"
+                className="animate-pulse bg-surface-tertiary h-14 sm:h-16 rounded-lg"
               ></div>
             ))}
           </div>
@@ -121,22 +121,22 @@ export function MarketList({
                 key={market.market}
                 onClick={() => onSelectMarket(market.market)}
                 className={
-                  "w-full p-3 rounded-lg flex items-center justify-between transition-colors " +
+                  "w-full p-2 sm:p-3 rounded-lg flex items-center justify-between transition-colors " +
                   (selectedMarket === market.market
                     ? "bg-blue-600/20 border border-blue-500/50"
-                    : "hover:bg-gray-700/50")
+                    : "hover:bg-surface-tertiary")
                 }
               >
                 <div className="text-left">
-                  <p className="font-medium text-white">{market.koreanName}</p>
-                  <p className="text-xs text-gray-400">{market.market}</p>
+                  <p className="font-medium text-content text-sm sm:text-base">{market.koreanName}</p>
+                  <p className="text-xs text-content-secondary">{market.market}</p>
                 </div>
                 <div className="text-right">
                   {market.ticker && (
                     <>
                       <p
                         className={
-                          "font-medium " + getChangeColor(market.ticker.change)
+                          "font-medium text-sm sm:text-base " + getChangeColor(market.ticker.change)
                         }
                       >
                         ₩{formatNumber(market.ticker.tradePrice)}
@@ -152,7 +152,7 @@ export function MarketList({
                           {(market.ticker.signedChangeRate * 100).toFixed(2)}%
                         </p>
                       </div>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-content-muted hidden sm:block">
                         {formatVolume(market.ticker.accTradePrice24h)}
                       </p>
                     </>
